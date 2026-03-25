@@ -40,7 +40,7 @@ jobs:
           $out = "dist\FolderDir-windows"
           New-Item -ItemType Directory -Force $out | Out-Null
           Copy-Item $exe $out
-          & "$env:Qt6_DIR\bin\windeployqt.exe" --release --no-translations `
+          windeployqt.exe --release --no-translations `
               --no-system-d3d-compiler --no-opengl-sw "$out\FolderDir.exe"
 
       - name: Create ZIP archive
