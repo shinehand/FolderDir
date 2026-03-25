@@ -16,6 +16,7 @@
 #include <QtCore/QSettings>
 #include <QtCore/QStorageInfo>
 #include <QtCore/QDir>
+#include <QtCore/QFileInfo>
 #include <QtCore/QProcess>
 
 #include "FolderPane.h"

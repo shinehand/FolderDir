@@ -14,6 +14,7 @@
 #include <QtGui/QKeyEvent>
 #include <QtGui/QClipboard>
 #include <QtCore/QDir>
+#include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QMimeData>
 #include <QtGui/QDesktopServices>
