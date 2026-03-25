@@ -2,8 +2,8 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QSettings>
-#include <QtGui/QFont>
 #include <QtGui/QColor>
+#include <QtGui/QPalette>
 
 /**
  * @brief Theme — application colour theme.

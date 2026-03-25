@@ -301,7 +301,7 @@ void SearchDialog::onResultFound(const QString &path, qint64 size,
     item->setText(0, path);
     item->setText(1, QLocale::system().formattedDataSize(
                          size, 1, QLocale::DataSizeTraditionalFormat));
-    item->setText(2, modified.toString(Qt::DefaultLocaleShortDate));
+    item->setText(2, QLocale::system().toString(modified, QLocale::ShortFormat));
     item->setData(0, Qt::UserRole, path);
     // Show folder icon or file icon
     item->setIcon(0, QFileIconProvider().icon(QFileInfo(path)));

@@ -142,7 +142,7 @@ void PreviewPanel::onThumbnailReady(const QPixmap &px, const QString &path)
             .arg(fi.fileName().toHtmlEscaped())
             .arg(QLocale::system().formattedDataSize(fi.size(), 2,
                      QLocale::DataSizeTraditionalFormat))
-            .arg(fi.lastModified().toString(Qt::DefaultLocaleShortDate)));
+            .arg(QLocale::system().toString(fi.lastModified(), QLocale::ShortFormat)));
 }
 
 void PreviewPanel::showText(const QString &path)
@@ -182,6 +182,6 @@ void PreviewPanel::showInfo(const QString &path)
         .arg(fi.suffix().isEmpty() ? tr("File") : fi.suffix().toUpper().toHtmlEscaped())
         .arg(QLocale::system().formattedDataSize(fi.size(), 2,
                  QLocale::DataSizeTraditionalFormat))
-        .arg(fi.lastModified().toString(Qt::DefaultLocaleShortDate))
-        .arg(fi.birthTime().toString(Qt::DefaultLocaleShortDate)));
+        .arg(QLocale::system().toString(fi.lastModified(), QLocale::ShortFormat))
+        .arg(QLocale::system().toString(fi.birthTime(), QLocale::ShortFormat)));
 }

@@ -8,6 +8,8 @@
 #include <QtWidgets/QMessageBox>
 #include <QtCore/QTimer>
 #include <QtCore/QElapsedTimer>
+#include <QtCore/QFileInfo>
+#include <QtCore/QLocale>
 
 // ──────────────────────────────────────────────────────────────────────────────
 // ConflictDialog

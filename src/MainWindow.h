@@ -2,7 +2,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
-#include <QtWidgets/QAction>
+#include <QtGui/QAction>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QLabel>

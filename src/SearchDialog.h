@@ -11,6 +11,8 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QProgressBar>
 #include <QtCore/QThread>
+#include <QtCore/QDate>
+#include <QtCore/QDateTime>
 
 /**
  * @brief SearchWorker — runs file search in a background thread.

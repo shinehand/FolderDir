@@ -347,7 +347,7 @@ void FileSystemBrowser::newFolder()
     QDir dir(m_currentPath);
     if (!dir.mkdir(name)) {
         QMessageBox::warning(this, tr("Error"),
-                             tr("Could not create folder "%1".").arg(name));
+                             tr("Could not create folder \"%1\".").arg(name));
     }
 }
 
@@ -362,7 +362,7 @@ void FileSystemBrowser::newFile()
     QFile f(m_currentPath + QDir::separator() + name);
     if (!f.open(QIODevice::WriteOnly)) {
         QMessageBox::warning(this, tr("Error"),
-                             tr("Could not create file "%1".").arg(name));
+                             tr("Could not create file \"%1\".").arg(name));
     }
 }
 
@@ -378,8 +378,8 @@ void FileSystemBrowser::showProperties()
     info += tr("Type: %1\n").arg(fi.isDir() ? tr("Directory") : tr("File"));
     if (!fi.isDir())
         info += tr("Size: %1 bytes\n").arg(fi.size());
-    info += tr("Created: %1\n").arg(fi.birthTime().toString(Qt::DefaultLocaleShortDate));
-    info += tr("Modified: %1\n").arg(fi.lastModified().toString(Qt::DefaultLocaleShortDate));
+    info += tr("Created: %1\n").arg(QLocale::system().toString(fi.birthTime(), QLocale::ShortFormat));
+    info += tr("Modified: %1\n").arg(QLocale::system().toString(fi.lastModified(), QLocale::ShortFormat));
 
     QMessageBox::information(this, tr("Properties"), info);
 }
