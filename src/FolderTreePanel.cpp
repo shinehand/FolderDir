@@ -3,7 +3,7 @@
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QTreeView>
 #include <QtWidgets/QHeaderView>
-#include <QtWidgets/QFileSystemModel>
+#include <QtGui/QFileSystemModel>
 #include <QtCore/QDir>
 
 // ──────────────────────────────────────────────────────────────────────────────
