@@ -6,6 +6,7 @@
 #include <QtWidgets/QSizePolicy>
 #include <QtCore/QStorageInfo>
 #include <QtCore/QTimer>
+#include <QtCore/QLocale>
 
 // ──────────────────────────────────────────────────────────────────────────────
 DriveBar::DriveBar(QWidget *parent)

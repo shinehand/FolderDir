@@ -1,0 +1,32 @@
+// Windows resource file for FolderDir
+#include <windows.h>
+
+// Version information
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+FILEFLAGSMASK   0x3fL
+FILEFLAGS       0x0L
+FILEOS          VOS__WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName",      "shinehand"
+            VALUE "FileDescription",  "FolderDir - Multi-pane File Manager"
+            VALUE "FileVersion",      "1.0.0.0"
+            VALUE "InternalName",     "FolderDir"
+            VALUE "LegalCopyright",   "Copyright (C) 2026 shinehand"
+            VALUE "OriginalFilename", "FolderDir.exe"
+            VALUE "ProductName",      "FolderDir"
+            VALUE "ProductVersion",   "1.0.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
