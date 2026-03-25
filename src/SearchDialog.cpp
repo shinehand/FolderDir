@@ -15,8 +15,6 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QRegularExpression>
 
-Q_DECLARE_METATYPE(SearchWorker::Criteria)
-
 // ──────────────────────────────────────────────────────────────────────────────
 // SearchWorker
 // ──────────────────────────────────────────────────────────────────────────────
