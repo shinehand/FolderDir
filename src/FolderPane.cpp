@@ -11,7 +11,7 @@
 #include <QtGui/QMouseEvent>
 #include <QtCore/QDir>
 
-#include "AddressBar.h"
+#include "BreadcrumbBar.h"
 #include "FileSystemBrowser.h"
 #include "BookmarkManager.h"
 
@@ -34,8 +34,8 @@ void FolderPane::setupUi()
     m_layout->setContentsMargins(2, 2, 2, 2);
     m_layout->setSpacing(0);
 
-    // Address bar
-    m_addressBar = new AddressBar(this);
+    // Breadcrumb address bar
+    m_addressBar = new BreadcrumbBar(this);
     m_layout->addWidget(m_addressBar);
 
     // Tab bar
@@ -74,13 +74,15 @@ void FolderPane::setupUi()
             this, &FolderPane::onTabChanged);
     connect(m_tabBar, &QTabBar::tabCloseRequested,
             this, &FolderPane::onTabCloseRequested);
+    connect(m_tabBar, &QTabBar::tabBarDoubleClicked,
+            this, &FolderPane::onTabDoubleClicked);
     connect(m_tabBar, &QTabBar::customContextMenuRequested,
             this, &FolderPane::onTabContextMenu);
     m_tabBar->setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(addTabBtn, &QPushButton::clicked,
             this, &FolderPane::onNewTabRequested);
-    connect(m_addressBar, &AddressBar::pathCommitted,
+    connect(m_addressBar, &BreadcrumbBar::pathCommitted,
             this, &FolderPane::onAddressBarCommit);
 
     setActiveStyle();
@@ -183,6 +185,14 @@ void FolderPane::refresh()
     if (auto *b = currentBrowser()) b->refresh();
 }
 
+void FolderPane::nextTab()
+{
+    const int count = m_tabBar->count();
+    if (count < 2) return;
+    const int next = (m_tabBar->currentIndex() + 1) % count;
+    m_tabBar->setCurrentIndex(next);
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 QStringList FolderPane::tabPaths() const
 {
@@ -258,6 +268,15 @@ void FolderPane::onTabContextMenu(const QPoint &pos)
     QMenu menu(this);
     menu.addAction(tr("New Tab"), this, &FolderPane::onNewTabRequested);
     menu.addAction(tr("Close Tab"), this, [this, idx]() { closeTab(idx); });
+    menu.addAction(tr("Rename Tab…"), this, [this, idx]() {
+        bool ok = false;
+        const QString current = m_tabBar->tabText(idx);
+        const QString name = QInputDialog::getText(
+            this, tr("Rename Tab"), tr("Tab name:"),
+            QLineEdit::Normal, current, &ok);
+        if (ok && !name.isEmpty())
+            m_tabBar->setTabText(idx, name);
+    });
     menu.addSeparator();
 
     if (m_bookmarkManager) {
@@ -270,6 +289,18 @@ void FolderPane::onTabContextMenu(const QPoint &pos)
         }
     }
     menu.exec(m_tabBar->mapToGlobal(pos));
+}
+
+void FolderPane::onTabDoubleClicked(int index)
+{
+    if (index < 0) return;
+    bool ok = false;
+    const QString current = m_tabBar->tabText(index);
+    const QString name = QInputDialog::getText(
+        this, tr("Rename Tab"), tr("Tab name:"),
+        QLineEdit::Normal, current, &ok);
+    if (ok && !name.isEmpty())
+        m_tabBar->setTabText(index, name);
 }
 
 void FolderPane::syncAddressBar()

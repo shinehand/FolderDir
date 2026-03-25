@@ -41,6 +41,8 @@ set(SOURCES
     src/FileSystemBrowser.cpp
     src/FileSystemModel.cpp
     src/AddressBar.cpp
+    src/BreadcrumbBar.cpp
+    src/FolderTreePanel.cpp
     src/FileOperations.cpp
     src/FileOperationDialog.cpp
     src/BookmarkManager.cpp
@@ -57,6 +59,8 @@ set(HEADERS
     src/FileSystemBrowser.h
     src/FileSystemModel.h
     src/AddressBar.h
+    src/BreadcrumbBar.h
+    src/FolderTreePanel.h
     src/FileOperations.h
     src/FileOperationDialog.h
     src/BookmarkManager.h

@@ -8,7 +8,7 @@
 #include <QtCore/QStringList>
 #include <QtCore/QUrl>
 
-class AddressBar;
+class BreadcrumbBar;
 class FileSystemBrowser;
 class BookmarkManager;
 
@@ -17,7 +17,7 @@ class BookmarkManager;
  *
  * Contains:
  *  - A tab bar (multiple tabs each holding a path/view)
- *  - An address bar (breadcrumb + editable path)
+ *  - A BreadcrumbBar (clickable path segments + editable fallback)
  *  - A FileSystemBrowser (the actual file list view)
  */
 class FolderPane : public QWidget
@@ -48,6 +48,7 @@ public slots:
     void newTab(const QString &path = QString());
     void closeTab(int index);
     void closeCurrentTab();
+    void nextTab();
     void navigateBack();
     void navigateForward();
     void navigateUp();
@@ -68,6 +69,7 @@ protected:
 private slots:
     void onTabChanged(int index);
     void onTabCloseRequested(int index);
+    void onTabDoubleClicked(int index);
     void onAddressBarCommit(const QString &path);
     void onBrowserPathChanged(const QString &path);
     void onBrowserSelectionChanged();
@@ -82,7 +84,7 @@ private:
     void setActiveStyle();
 
     QTabBar        *m_tabBar{nullptr};
-    AddressBar     *m_addressBar{nullptr};
+    BreadcrumbBar  *m_addressBar{nullptr};
     QStackedWidget *m_stack{nullptr};
     QVBoxLayout    *m_layout{nullptr};
 

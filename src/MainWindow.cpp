@@ -8,9 +8,11 @@
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QSplitter>
+#include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QInputDialog>
+#include <QtWidgets/QFileDialog>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QCloseEvent>
 #include <QtCore/QSettings>
@@ -27,6 +29,7 @@
 #include "PreviewPanel.h"
 #include "SettingsDialog.h"
 #include "FileSystemBrowser.h"
+#include "FolderTreePanel.h"
 
 // ──────────────────────────────────────────────────────────────────────────────
 MainWindow::MainWindow(QWidget *parent)
@@ -166,6 +169,13 @@ void MainWindow::setupMenuBar()
     connect(m_actBookmarkSidebar, &QAction::toggled,
             this, &MainWindow::onToggleBookmarkSidebar);
 
+    m_actFolderTree = viewMenu->addAction(tr("&Folder Tree"));
+    m_actFolderTree->setCheckable(true);
+    m_actFolderTree->setChecked(false);
+    m_actFolderTree->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_T));
+    connect(m_actFolderTree, &QAction::toggled,
+            this, &MainWindow::onToggleFolderTree);
+
     // ── Tools ─────────────────────────────────────────────────────────────
     QMenu *toolsMenu = menuBar()->addMenu(tr("&Tools"));
     toolsMenu->addAction(tr("&Search…"), this, &MainWindow::onOpenSearch,
@@ -180,14 +190,17 @@ void MainWindow::setupMenuBar()
                       this, &MainWindow::onAddBookmark,
                       QKeySequence(Qt::CTRL | Qt::Key_D));
     bmMenu->addSeparator();
+    bmMenu->addAction(tr("&Export Bookmarks…"), this, &MainWindow::onExportBookmarks);
+    bmMenu->addAction(tr("&Import Bookmarks…"), this, &MainWindow::onImportBookmarks);
+    bmMenu->addSeparator();
 
     auto rebuildBmMenu = [this, bmMenu]() {
-        // Remove dynamic entries beyond the separator
+        // Remove all previously-added dynamic bookmark actions (identified by
+        // their object name) before rebuilding from the current bookmark list.
         const auto actions = bmMenu->actions();
-        bool pastSep = false;
         for (QAction *a : actions) {
-            if (a->isSeparator()) { pastSep = true; continue; }
-            if (pastSep) bmMenu->removeAction(a);
+            if (a->objectName() == QLatin1String("bm_dynamic"))
+                bmMenu->removeAction(a);
         }
         for (const BookmarkEntry &e : m_bookmarkManager->bookmarks()) {
             QAction *a = bmMenu->addAction(
@@ -195,7 +208,7 @@ void MainWindow::setupMenuBar()
                 [this, path = e.path]() {
                     if (m_activePane) m_activePane->navigateTo(path);
                 });
-            (void)a;
+            a->setObjectName(QStringLiteral("bm_dynamic"));
         }
     };
     rebuildBmMenu();
@@ -206,8 +219,10 @@ void MainWindow::setupMenuBar()
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     helpMenu->addAction(tr("&About FolderDir"), this, [this]() {
         QMessageBox::about(this, tr("About FolderDir"),
-            tr("<b>FolderDir</b> v1.0.0<br>"
+            tr("<b>FolderDir</b> v1.0.2<br>"
                "A multi-pane file manager inspired by Q-Dir.<br>"
+               "Phase 5 features: breadcrumb bar, folder tree sidebar,<br>"
+               "F-key shortcuts, properties dialog, and more.<br>"
                "Built with C++17 and Qt."));
     });
 }
@@ -266,8 +281,21 @@ void MainWindow::setupDriveBar()
 
 void MainWindow::setupDockWidgets()
 {
+    // ── Folder tree sidebar ───────────────────────────────────────────────
+    m_treeDock = new QDockWidget(tr("Folder Tree"), this);
+    m_treeDock->setObjectName(QStringLiteral("FolderTreeDock"));
+    m_treeDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_treePanel = new FolderTreePanel(m_treeDock);
+    m_treeDock->setWidget(m_treePanel);
+    addDockWidget(Qt::LeftDockWidgetArea, m_treeDock);
+    m_treeDock->hide();
+
+    connect(m_treePanel, &FolderTreePanel::navigateRequested,
+            this, &MainWindow::onTreeNavigate);
+
     // ── Bookmark sidebar ──────────────────────────────────────────────────
     m_bookmarkDock = new QDockWidget(tr("Bookmarks"), this);
+    m_bookmarkDock->setObjectName(QStringLiteral("BookmarkDock"));
     m_bookmarkDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
     auto *bmList = new QListWidget(m_bookmarkDock);
@@ -295,6 +323,7 @@ void MainWindow::setupDockWidgets()
 
     // ── Preview panel ─────────────────────────────────────────────────────
     m_previewDock = new QDockWidget(tr("Preview"), this);
+    m_previewDock->setObjectName(QStringLiteral("PreviewDock"));
     m_previewDock->setAllowedAreas(Qt::RightDockWidgetArea | Qt::BottomDockWidgetArea);
     m_previewPanel = new PreviewPanel(m_previewDock);
     m_previewDock->setWidget(m_previewPanel);
@@ -330,6 +359,13 @@ void MainWindow::setupConnections()
                 m_previewPanel->previewFile(sel.first());
             else
                 m_previewPanel->clear();
+        });
+
+        // Sync folder tree when active pane navigates
+        connect(pane, &FolderPane::pathChanged, this, [this, pane](const QString &path) {
+            if (pane != m_activePane) return;
+            if (m_treeDock->isVisible())
+                m_treePanel->setActivePath(path);
         });
     }
 }
@@ -429,9 +465,11 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
+    const Qt::KeyboardModifiers mods = event->modifiers();
+    const int key = event->key();
+
     // Ctrl+1..4 — activate pane
-    if (event->modifiers() == Qt::ControlModifier) {
-        const int key = event->key();
+    if (mods == Qt::ControlModifier) {
         if (key >= Qt::Key_1 && key <= Qt::Key_4) {
             int idx = key - Qt::Key_1;
             if (idx < m_paneCount && m_panes[idx]) {
@@ -442,7 +480,64 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             event->accept();
             return;
         }
+        // Ctrl+Tab — next tab in active pane
+        if (key == Qt::Key_Tab) {
+            if (auto *p = activePane()) p->nextTab();
+            event->accept();
+            return;
+        }
+        // Ctrl+W — close current tab
+        if (key == Qt::Key_W) {
+            if (auto *p = activePane()) p->closeCurrentTab();
+            event->accept();
+            return;
+        }
     }
+
+    // F3 — open with viewer
+    if (key == Qt::Key_F3 && mods == Qt::NoModifier) {
+        onViewFile();
+        event->accept();
+        return;
+    }
+    // F4 — open with editor
+    if (key == Qt::Key_F4 && mods == Qt::NoModifier) {
+        onEditFile();
+        event->accept();
+        return;
+    }
+    // F5 — copy to (with destination dialog)
+    if (key == Qt::Key_F5 && mods == Qt::NoModifier) {
+        onCopyTo();
+        event->accept();
+        return;
+    }
+    // F6 — move to (with destination dialog)
+    if (key == Qt::Key_F6 && mods == Qt::NoModifier) {
+        onMoveTo();
+        event->accept();
+        return;
+    }
+    // F7 — new folder
+    if (key == Qt::Key_F7 && mods == Qt::NoModifier) {
+        onNewFolder();
+        event->accept();
+        return;
+    }
+    // F9 — copy and rename
+    if (key == Qt::Key_F9 && mods == Qt::NoModifier) {
+        if (auto *p = activePane())
+            if (auto *b = p->currentBrowser()) b->copyAndRename();
+        event->accept();
+        return;
+    }
+    // F10 — exit
+    if (key == Qt::Key_F10 && mods == Qt::NoModifier) {
+        onExit();
+        event->accept();
+        return;
+    }
+
     QMainWindow::keyPressEvent(event);
 }
 
@@ -450,6 +545,16 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 FolderPane *MainWindow::activePane() const
 {
     return m_activePane ? m_activePane : m_panes[0];
+}
+
+QString MainWindow::otherPanePath() const
+{
+    const FolderPane *current = activePane();
+    for (int i = 0; i < m_paneCount; ++i) {
+        if (m_panes[i] && m_panes[i] != current && m_panes[i]->isVisible())
+            return m_panes[i]->currentPath();
+    }
+    return current ? current->currentPath() : QDir::homePath();
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -463,6 +568,10 @@ void MainWindow::onActivePaneChanged(FolderPane *pane)
         if (p) p->setActive(p == pane);
     }
     updateStatusBar();
+
+    // Sync folder tree to the newly active pane's path
+    if (m_treeDock && m_treeDock->isVisible() && pane)
+        m_treePanel->setActivePath(pane->currentPath());
 }
 
 void MainWindow::onSelectionChanged()
@@ -569,6 +678,14 @@ void MainWindow::onToggleBookmarkSidebar()
     m_bookmarkDock->setVisible(m_actBookmarkSidebar->isChecked());
 }
 
+void MainWindow::onToggleFolderTree()
+{
+    const bool visible = m_actFolderTree->isChecked();
+    m_treeDock->setVisible(visible);
+    if (visible && m_activePane)
+        m_treePanel->setActivePath(m_activePane->currentPath());
+}
+
 void MainWindow::onOpenSearch()
 {
     const QString startPath = m_activePane ? m_activePane->currentPath()
@@ -640,4 +757,81 @@ void MainWindow::onNavigateForward()
 void MainWindow::onNavigateUp()
 {
     if (m_activePane) m_activePane->navigateUp();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// F-key / new slots
+// ──────────────────────────────────────────────────────────────────────────────
+void MainWindow::onCopyTo()
+{
+    auto *pane = activePane();
+    if (!pane) return;
+    auto *browser = pane->currentBrowser();
+    if (!browser) return;
+    browser->copyToPath(otherPanePath());
+}
+
+void MainWindow::onMoveTo()
+{
+    auto *pane = activePane();
+    if (!pane) return;
+    auto *browser = pane->currentBrowser();
+    if (!browser) return;
+    browser->moveToPath(otherPanePath());
+}
+
+void MainWindow::onViewFile()
+{
+    if (auto *b = activePane() ? activePane()->currentBrowser() : nullptr)
+        b->openWithViewer();
+}
+
+void MainWindow::onEditFile()
+{
+    if (auto *b = activePane() ? activePane()->currentBrowser() : nullptr)
+        b->openWithEditor();
+}
+
+void MainWindow::onProperties()
+{
+    if (auto *b = activePane() ? activePane()->currentBrowser() : nullptr)
+        b->showProperties();
+}
+
+void MainWindow::onExportBookmarks()
+{
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Export Bookmarks"),
+        QDir::homePath() + QStringLiteral("/bookmarks.json"),
+        tr("JSON Files (*.json);;All Files (*)"));
+    if (path.isEmpty()) return;
+
+    if (!m_bookmarkManager->exportToFile(path))
+        QMessageBox::warning(this, tr("Export Failed"),
+                             tr("Could not write bookmarks to:\n%1").arg(path));
+    else
+        QMessageBox::information(this, tr("Export Successful"),
+                                 tr("Bookmarks exported to:\n%1").arg(path));
+}
+
+void MainWindow::onImportBookmarks()
+{
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Import Bookmarks"),
+        QDir::homePath(),
+        tr("JSON Files (*.json);;All Files (*)"));
+    if (path.isEmpty()) return;
+
+    if (!m_bookmarkManager->importFromFile(path))
+        QMessageBox::warning(this, tr("Import Failed"),
+                             tr("Could not read bookmarks from:\n%1").arg(path));
+    else
+        QMessageBox::information(this, tr("Import Successful"),
+                                 tr("Bookmarks imported from:\n%1").arg(path));
+}
+
+void MainWindow::onTreeNavigate(const QString &path)
+{
+    if (m_activePane)
+        m_activePane->navigateTo(path);
 }

@@ -4,6 +4,7 @@
 #include <QtWidgets/QListView>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QFormLayout>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QMenu>
@@ -11,12 +12,16 @@
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QHeaderView>
+#include <QtWidgets/QDialog>
+#include <QtWidgets/QDialogButtonBox>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QClipboard>
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QMimeData>
+#include <QtCore/QProcess>
+#include <QtCore/QStandardPaths>
 #include <QtGui/QDesktopServices>
 
 #include "FileSystemModel.h"
@@ -372,16 +377,56 @@ void FileSystemBrowser::showProperties()
     if (paths.isEmpty()) return;
 
     const QFileInfo fi(paths.first());
-    QString info;
-    info += tr("Name: %1\n").arg(fi.fileName());
-    info += tr("Path: %1\n").arg(fi.absoluteFilePath());
-    info += tr("Type: %1\n").arg(fi.isDir() ? tr("Directory") : tr("File"));
-    if (!fi.isDir())
-        info += tr("Size: %1 bytes\n").arg(fi.size());
-    info += tr("Created: %1\n").arg(QLocale::system().toString(fi.birthTime(), QLocale::ShortFormat));
-    info += tr("Modified: %1\n").arg(QLocale::system().toString(fi.lastModified(), QLocale::ShortFormat));
 
-    QMessageBox::information(this, tr("Properties"), info);
+    // Build a proper properties dialog
+    auto *dlg = new QDialog(this);
+    dlg->setWindowTitle(tr("Properties — %1").arg(fi.fileName()));
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->setModal(true);
+    dlg->resize(400, 300);
+
+    auto *layout = new QVBoxLayout(dlg);
+
+    auto *form = new QFormLayout;
+    form->setLabelAlignment(Qt::AlignRight);
+
+    form->addRow(tr("Name:"),     new QLabel(fi.fileName(), dlg));
+    form->addRow(tr("Location:"), new QLabel(fi.absolutePath(), dlg));
+    form->addRow(tr("Type:"),     new QLabel(fi.isDir() ? tr("Directory") : tr("File (%1)").arg(fi.suffix().toUpper()), dlg));
+
+    if (!fi.isDir()) {
+        const qint64 sz = fi.size();
+        QString sizeStr;
+        if (sz < 1024)
+            sizeStr = tr("%1 bytes").arg(sz);
+        else if (sz < 1024 * 1024)
+            sizeStr = tr("%1 KB  (%2 bytes)").arg(sz / 1024.0, 0, 'f', 1).arg(sz);
+        else if (sz < 1024LL * 1024 * 1024)
+            sizeStr = tr("%1 MB  (%2 bytes)").arg(sz / (1024.0 * 1024.0), 0, 'f', 2).arg(sz);
+        else
+            sizeStr = tr("%1 GB  (%2 bytes)").arg(sz / (1024.0 * 1024.0 * 1024.0), 0, 'f', 3).arg(sz);
+        form->addRow(tr("Size:"), new QLabel(sizeStr, dlg));
+    }
+
+    form->addRow(tr("Created:"),  new QLabel(QLocale::system().toString(fi.birthTime(),    QLocale::ShortFormat), dlg));
+    form->addRow(tr("Modified:"), new QLabel(QLocale::system().toString(fi.lastModified(), QLocale::ShortFormat), dlg));
+    form->addRow(tr("Accessed:"), new QLabel(QLocale::system().toString(fi.lastRead(),     QLocale::ShortFormat), dlg));
+
+    // Permissions (read / write / execute)
+    QStringList perms;
+    if (fi.isReadable())    perms << tr("Read");
+    if (fi.isWritable())    perms << tr("Write");
+    if (fi.isExecutable())  perms << tr("Execute");
+    form->addRow(tr("Permissions:"), new QLabel(perms.join(QStringLiteral(", ")), dlg));
+
+    layout->addLayout(form);
+    layout->addStretch(1);
+
+    auto *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok, dlg);
+    connect(btnBox, &QDialogButtonBox::accepted, dlg, &QDialog::accept);
+    layout->addWidget(btnBox);
+
+    dlg->show();
 }
 
 void FileSystemBrowser::copyPathToClipboard()
@@ -411,6 +456,152 @@ void FileSystemBrowser::selectAll()
 // ──────────────────────────────────────────────────────────────────────────────
 // Slots
 // ──────────────────────────────────────────────────────────────────────────────
+void FileSystemBrowser::openWithViewer()
+{
+    const QStringList paths = selectedPaths();
+    for (const QString &p : paths)
+        QDesktopServices::openUrl(QUrl::fromLocalFile(p));
+}
+
+void FileSystemBrowser::openWithEditor()
+{
+    const QStringList paths = selectedPaths();
+    if (paths.isEmpty()) return;
+
+    // Use a configurable editor; fall back to platform defaults
+#ifdef Q_OS_WIN
+    // Try user-installed editors in preference order; always fall back to notepad.exe
+    static const QStringList winEditors{
+        QStringLiteral("notepad++"),
+        QStringLiteral("code"),    // VS Code
+        QStringLiteral("subl"),    // Sublime Text
+    };
+    for (const QString &p : paths) {
+        QString exePath;
+        for (const QString &ed : winEditors) {
+            exePath = QStandardPaths::findExecutable(ed);
+            if (!exePath.isEmpty()) break;
+        }
+        // notepad.exe is always present in System32 even when not on PATH
+        if (exePath.isEmpty())
+            exePath = QStringLiteral("notepad.exe");
+        QProcess::startDetached(exePath, {p});
+    }
+#elif defined(Q_OS_MAC)
+    for (const QString &p : paths)
+        QProcess::startDetached(QStringLiteral("open"), {QStringLiteral("-e"), p});
+#else
+    // Try common GUI editors; verify availability via QStandardPaths before launching
+    static const QStringList linuxEditors{
+        QStringLiteral("gedit"),
+        QStringLiteral("kate"),
+        QStringLiteral("mousepad"),
+        QStringLiteral("geany"),
+        QStringLiteral("kwrite"),
+        QStringLiteral("xed"),
+        QStringLiteral("nano"),     // terminal fallback
+        QStringLiteral("xdg-open"), // last resort (opens with default app)
+    };
+    for (const QString &p : paths) {
+        for (const QString &ed : linuxEditors) {
+            const QString exePath = QStandardPaths::findExecutable(ed);
+            if (!exePath.isEmpty()) {
+                QProcess::startDetached(exePath, {p});
+                break;
+            }
+        }
+    }
+#endif
+}
+
+void FileSystemBrowser::copyToPath(const QString &destPath)
+{
+    const QStringList srcs = selectedPaths();
+    if (srcs.isEmpty()) return;
+
+    bool ok = false;
+    const QString dest = QInputDialog::getText(
+        this, tr("Copy To"),
+        tr("Copy %n item(s) to:", "", srcs.size()),
+        QLineEdit::Normal,
+        destPath.isEmpty() ? m_currentPath : destPath,
+        &ok);
+    if (!ok || dest.isEmpty()) return;
+
+    const QString cleanDest = QDir::cleanPath(dest);
+    if (!QDir(cleanDest).exists()) {
+        QMessageBox::warning(this, tr("Copy"),
+                             tr("Destination does not exist:\n%1").arg(cleanDest));
+        return;
+    }
+
+    auto *op = new FileOperation(FileOperationKind::Copy, srcs, cleanDest);
+    auto *dlg = new FileOperationDialog(op, this);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    op->start();
+    dlg->exec();
+}
+
+void FileSystemBrowser::moveToPath(const QString &destPath)
+{
+    const QStringList srcs = selectedPaths();
+    if (srcs.isEmpty()) return;
+
+    bool ok = false;
+    const QString dest = QInputDialog::getText(
+        this, tr("Move To"),
+        tr("Move %n item(s) to:", "", srcs.size()),
+        QLineEdit::Normal,
+        destPath.isEmpty() ? m_currentPath : destPath,
+        &ok);
+    if (!ok || dest.isEmpty()) return;
+
+    const QString cleanDest = QDir::cleanPath(dest);
+    if (!QDir(cleanDest).exists()) {
+        QMessageBox::warning(this, tr("Move"),
+                             tr("Destination does not exist:\n%1").arg(cleanDest));
+        return;
+    }
+
+    auto *op = new FileOperation(FileOperationKind::Move, srcs, cleanDest);
+    auto *dlg = new FileOperationDialog(op, this);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    op->start();
+    dlg->exec();
+}
+
+void FileSystemBrowser::copyAndRename()
+{
+    const QStringList srcs = selectedPaths();
+    if (srcs.isEmpty()) return;
+
+    const QFileInfo fi(srcs.first());
+    bool ok = false;
+    const QString newName = QInputDialog::getText(
+        this, tr("Copy and Rename"),
+        tr("Copy \"%1\" as:").arg(fi.fileName()),
+        QLineEdit::Normal,
+        tr("Copy of %1").arg(fi.fileName()),
+        &ok);
+    if (!ok || newName.isEmpty()) return;
+
+    const QString destPath = m_currentPath + QDir::separator() + newName;
+    if (QFileInfo::exists(destPath)) {
+        const int choice = QMessageBox::question(
+            this, tr("File Exists"),
+            tr("A file named \"%1\" already exists. Overwrite?").arg(newName),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (choice != QMessageBox::Yes) return;
+        QFile::remove(destPath);
+    }
+
+    if (!QFile::copy(srcs.first(), destPath)) {
+        QMessageBox::warning(this, tr("Error"),
+                             tr("Could not copy \"%1\" as \"%2\".")
+                             .arg(fi.fileName(), newName));
+    }
+}
+
 void FileSystemBrowser::onItemActivated(const QModelIndex &index)
 {
     const QString path = m_model->filePath(index);
@@ -433,15 +624,20 @@ void FileSystemBrowser::onContextMenu(const QPoint &pos)
     if (onItem) {
         menu.addAction(QIcon::fromTheme(QStringLiteral("document-open")),
                        tr("Open"), this, [this, idx]() { onItemActivated(idx); });
+        menu.addAction(tr("Open with Viewer (F3)"), this, &FileSystemBrowser::openWithViewer);
+        menu.addAction(tr("Open with Editor (F4)"), this, &FileSystemBrowser::openWithEditor);
         menu.addSeparator();
-        menu.addAction(tr("Cut"),    this, &FileSystemBrowser::cutSelected);
-        menu.addAction(tr("Copy"),   this, &FileSystemBrowser::copySelected);
-        menu.addAction(tr("Delete"), this, [this]() { deleteSelected(); });
-        menu.addAction(tr("Rename"), this, &FileSystemBrowser::beginRename);
+        menu.addAction(tr("Cut"),           this, &FileSystemBrowser::cutSelected);
+        menu.addAction(tr("Copy"),          this, &FileSystemBrowser::copySelected);
+        menu.addAction(tr("Copy To… (F5)"), this, [this]() { copyToPath(); });
+        menu.addAction(tr("Move To… (F6)"), this, [this]() { moveToPath(); });
+        menu.addAction(tr("Copy && Rename… (F9)"), this, &FileSystemBrowser::copyAndRename);
+        menu.addAction(tr("Delete"),        this, [this]() { deleteSelected(); });
+        menu.addAction(tr("Rename"),        this, &FileSystemBrowser::beginRename);
         menu.addSeparator();
-        menu.addAction(tr("Copy Path"), this, &FileSystemBrowser::copyPathToClipboard);
+        menu.addAction(tr("Copy Path"),  this, &FileSystemBrowser::copyPathToClipboard);
         menu.addSeparator();
-        menu.addAction(tr("Properties"), this, &FileSystemBrowser::showProperties);
+        menu.addAction(tr("Properties (Alt+Enter)"), this, &FileSystemBrowser::showProperties);
     } else {
         menu.addAction(tr("Paste"),      this, &FileSystemBrowser::pasteHere);
         menu.addAction(tr("New Folder"), this, &FileSystemBrowser::newFolder);
@@ -467,34 +663,78 @@ void FileSystemBrowser::onSortIndicatorChanged(int column, Qt::SortOrder order)
 // ──────────────────────────────────────────────────────────────────────────────
 void FileSystemBrowser::keyPressEvent(QKeyEvent *event)
 {
+    const bool altMod   = (event->modifiers() == Qt::AltModifier);
+    const bool shiftMod = (event->modifiers() == Qt::ShiftModifier);
+    const bool noMod    = (event->modifiers() == Qt::NoModifier);
+
     switch (event->key()) {
     case Qt::Key_Return:
     case Qt::Key_Enter: {
-        const QModelIndexList sel = m_activeView->selectionModel()->selectedRows();
-        if (!sel.isEmpty()) onItemActivated(sel.first());
+        if (noMod) {
+            const QModelIndexList sel = m_activeView->selectionModel()->selectedRows();
+            if (!sel.isEmpty()) onItemActivated(sel.first());
+            event->accept();
+            return;
+        }
+        if (altMod) {
+            // Alt+Enter → Properties
+            showProperties();
+            event->accept();
+            return;
+        }
         break;
     }
     case Qt::Key_F2:
         beginRename();
-        break;
+        event->accept();
+        return;
+    case Qt::Key_F3:
+        openWithViewer();
+        event->accept();
+        return;
+    case Qt::Key_F4:
+        openWithEditor();
+        event->accept();
+        return;
+    case Qt::Key_F7:
+        newFolder();
+        event->accept();
+        return;
+    case Qt::Key_F8:
     case Qt::Key_Delete:
-        deleteSelected(event->modifiers() & Qt::ShiftModifier);
-        break;
+        deleteSelected(shiftMod);
+        event->accept();
+        return;
+    case Qt::Key_F9:
+        copyAndRename();
+        event->accept();
+        return;
     case Qt::Key_Backspace:
         navigateUp();
-        break;
+        event->accept();
+        return;
     case Qt::Key_F5:
+        // F5 without modifiers = refresh (Ctrl+R is also supported)
+        // F5/F6 for copy/move are handled in MainWindow to use pane context
         refresh();
+        event->accept();
+        return;
+    case Qt::Key_R:
+        if (event->modifiers() == Qt::ControlModifier) {
+            refresh();
+            event->accept();
+            return;
+        }
         break;
     case Qt::Key_Slash:
     case Qt::Key_Backslash:
         toggleFilterBar();
-        break;
-    default:
-        QWidget::keyPressEvent(event);
+        event->accept();
         return;
+    default:
+        break;
     }
-    event->accept();
+    QWidget::keyPressEvent(event);
 }
 
 void FileSystemBrowser::applySort()

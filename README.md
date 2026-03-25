@@ -10,13 +10,16 @@ It lets you view up to **four directories simultaneously** in a resizable split-
 | Feature | Description |
 |---------|-------------|
 | **Multi-pane layout** | 1 / 2 / 3 / 4 panes, resizable splitters (2×2 grid by default) |
-| **Tabs per pane** | Each pane supports unlimited tabs; Ctrl+T / Ctrl+W to open/close |
-| **Address bar** | Editable path with validation; navigate by typing or pressing Enter |
+| **Tabs per pane** | Unlimited tabs; Ctrl+T new / Ctrl+W close / Ctrl+Tab switch / double-click to rename |
+| **Breadcrumb address bar** | Clickable path segments for instant navigation; double-click or ✎ button to type freely |
+| **Folder tree sidebar** | Left-panel directory tree (Ctrl+Shift+T); auto-syncs with active pane |
 | **Drive bar** | One-click jump to any mounted drive/volume |
-| **File operations** | Copy (F5), Move (F6), Delete (F8/Del), Rename (F2), New Folder (F7) |
+| **File operations** | Copy (F5), Move (F6), Delete (F8/Del), Rename (F2), New Folder (F7), Copy+Rename (F9) |
+| **Open with Viewer/Editor** | F3 opens with default app, F4 opens with text editor |
+| **Properties dialog** | Alt+Enter shows full name/size/type/dates/permissions in a dedicated dialog |
 | **Async progress** | Large copies/moves run in a worker thread with speed & ETA display |
 | **Conflict resolution** | Per-file dialog: Overwrite / Skip / Rename / Cancel (with "All" options) |
-| **Bookmarks** | Ctrl+D to add; sidebar list; JSON export/import |
+| **Bookmarks** | Ctrl+D to add; sidebar list; JSON export/import via Bookmarks menu |
 | **Search** | Full search dialog: name wildcard, content text, date & size range |
 | **Preview panel** | Images (async thumbnail), plain text/code, generic file info |
 | **Filter bar** | Per-pane glob filter (e.g. `*.cpp`) shown at the bottom of each pane |
@@ -120,26 +123,33 @@ cmake --build build-debug --parallel
 | **Alt+←** | Navigate back |
 | **Alt+→** | Navigate forward |
 | **Alt+↑** | Go up one directory |
+| **Backspace** | Go up one directory |
 | **F2** | Rename selected |
-| **F5** | Copy |
-| **F6** | Move |
+| **F3** | Open selected with viewer (default app) |
+| **F4** | Open selected with editor |
+| **F5** | Copy selected to destination (dialog) |
+| **F6** | Move selected to destination (dialog) |
 | **F7** / **Ctrl+Shift+N** | New folder |
-| **Delete** / **F8** | Delete selected |
+| **F8** / **Delete** | Delete selected |
+| **F9** | Copy and rename (copy to same directory with new name) |
+| **F10** | Exit |
+| **Alt+Enter** | File / folder properties dialog |
 | **Ctrl+C** | Copy to clipboard |
 | **Ctrl+X** | Cut |
 | **Ctrl+V** | Paste |
 | **Ctrl+A** | Select all |
+| **Ctrl+R** / **F5 (no selection)** | Refresh current directory |
 | **Ctrl+Shift+C** | Copy full path to clipboard |
 | **Ctrl+D** | Add current folder to bookmarks |
 | **Ctrl+F** | Open search dialog |
 | **Ctrl+H** | Toggle hidden files |
 | **Ctrl+P** | Toggle preview panel |
+| **Ctrl+Shift+T** | Toggle folder tree sidebar |
 | **Ctrl+T** | New tab |
 | **Ctrl+W** | Close current tab |
+| **Ctrl+Tab** | Switch to next tab in active pane |
 | **Ctrl+1..4** | Activate pane 1–4 |
 | **/** or **\\** | Toggle filter bar |
-| **F5** (in view) | Refresh |
-| **Backspace** | Navigate up |
 
 ---
 
@@ -160,11 +170,17 @@ cmake --build build-debug --parallel
 
 ## 📋 Roadmap
 
-- [ ] Phase 1 ✅ — Multi-pane layout, file navigation, details view
-- [ ] Phase 2 ✅ — Tabs, file operations, address bar
-- [ ] Phase 3 ✅ — Bookmarks, search, filter, settings
-- [ ] Phase 4 ✅ — Preview panel, drive bar, async thumbnails
-- [ ] Phase 5 — Thumbnail caching, i18n (Korean), plugin system, portable mode
+- [x] Phase 1 ✅ — Multi-pane layout, file navigation, details view
+- [x] Phase 2 ✅ — Tabs, file operations, address bar
+- [x] Phase 3 ✅ — Bookmarks, search, filter, settings
+- [x] Phase 4 ✅ — Preview panel, drive bar, async thumbnails
+- [x] Phase 5 ✅ — F-key shortcuts (F3–F10), breadcrumb address bar, folder tree sidebar, properties dialog, Ctrl+Tab, tab rename, bookmark export/import UI
+- [ ] Phase 6 🟠 — File/folder color coding, folder size column, tab drag between panes
+- [ ] Phase 7 🟠 — Pane sync, pane lock/clone, layout favorites (64 slots), PDF preview, regex search
+- [ ] Phase 8 🟡 — ZIP browsing, folder compare, directory export (CSV/TXT), portable mode (INI), Korean i18n
+- [ ] Phase 9 🟡 — Toolbar customization, external tool slots, mouse gestures, high-contrast/accessibility
+
+> See [docs/planning.md](docs/planning.md) for the full Q-Dir gap analysis, planning team findings, and sprint plan.
 
 ---
 
