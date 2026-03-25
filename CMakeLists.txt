@@ -91,6 +91,39 @@ if(WIN32)
     target_compile_definitions(FolderDir PRIVATE UNICODE _UNICODE)
 endif()
 
+# Windows: automatically deploy Qt runtime (DLLs + platform plugins) after
+# each build so the exe can be run directly from the build output directory.
+# Without this step the app silently fails to start because the required
+# Qt platform plugin (platforms/qwindows.dll) is not present.
+if(WIN32)
+    if(QT_VERSION_MAJOR EQUAL 6)
+        find_program(WINDEPLOYQT_EXECUTABLE
+            NAMES windeployqt6 windeployqt
+            HINTS "${Qt6_DIR}/../../../bin"
+        )
+    else()
+        find_program(WINDEPLOYQT_EXECUTABLE
+            NAMES windeployqt
+            HINTS "${Qt5_DIR}/../../../bin"
+        )
+    endif()
+
+    if(WINDEPLOYQT_EXECUTABLE)
+        add_custom_command(TARGET FolderDir POST_BUILD
+            COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+                    --no-translations
+                    --no-system-d3d-compiler
+                    --no-opengl-sw
+                    "$<TARGET_FILE:FolderDir>"
+            COMMENT "Deploying Qt runtime to build directory..."
+        )
+    else()
+        message(STATUS
+            "windeployqt not found — Qt DLLs must be deployed manually "
+            "(run windeployqt on the built FolderDir.exe).")
+    endif()
+endif()
+
 # Install
 include(GNUInstallDirs)
 install(TARGETS FolderDir

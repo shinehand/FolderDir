@@ -31,6 +31,20 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
+      - name: Deploy Qt runtime
+        shell: pwsh
+        run: |
+          $exe = "build\Release\FolderDir.exe"
+          windeployqt.exe --release --no-translations `
+              --no-system-d3d-compiler --no-opengl-sw "$exe"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FolderDir-windows-ci
+          path: build\Release\
+          retention-days: 7
+
   build-linux:
     name: Linux (GCC + Qt6)
     runs-on: ubuntu-22.04
