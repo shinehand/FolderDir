@@ -160,11 +160,18 @@ cmake --build build-debug --parallel
 
 ## 📋 Roadmap
 
-- [ ] Phase 1 ✅ — Multi-pane layout, file navigation, details view
-- [ ] Phase 2 ✅ — Tabs, file operations, address bar
-- [ ] Phase 3 ✅ — Bookmarks, search, filter, settings
-- [ ] Phase 4 ✅ — Preview panel, drive bar, async thumbnails
-- [ ] Phase 5 — Thumbnail caching, i18n (Korean), plugin system, portable mode
+- [x] Phase 1 ✅ — Multi-pane layout, file navigation, details view
+- [x] Phase 2 ✅ — Tabs, file operations, address bar
+- [x] Phase 3 ✅ — Bookmarks, search, filter, settings
+- [x] Phase 4 ✅ — Preview panel, drive bar, async thumbnails
+- [ ] Phase 5 🔴 — F-key shortcuts completion, breadcrumb address bar, folder tree sidebar, properties dialog, Ctrl+Tab
+- [ ] Phase 6 🔴 — F6 move dialog, F9 copy-with-rename, CRC verification, bookmark export/import UI
+- [ ] Phase 7 🟠 — File/folder color coding, folder size column, tab drag between panes, tab rename
+- [ ] Phase 8 🟠 — Pane sync, pane lock/clone, layout favorites (64 slots), PDF preview, regex search
+- [ ] Phase 9 🟡 — ZIP browsing, folder compare, directory export (CSV/TXT), portable mode (INI), Korean i18n
+- [ ] Phase 10 🟡 — Toolbar customization, external tool slots, mouse gestures, high-contrast/accessibility
+
+> See [docs/planning.md](docs/planning.md) for the full Q-Dir gap analysis, planning team findings, and sprint plan.
 
 ---
 
