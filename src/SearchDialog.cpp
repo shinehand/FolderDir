@@ -11,8 +11,10 @@
 #include <QtWidgets/QFileIconProvider>
 #include <QtCore/QDir>
 #include <QtCore/QDirIterator>
+#include <QtCore/QFile>
 #include <QtCore/QDateTime>
 #include <QtCore/QFileInfo>
+#include <QtCore/QLocale>
 #include <QtCore/QRegularExpression>
 
 // ──────────────────────────────────────────────────────────────────────────────
