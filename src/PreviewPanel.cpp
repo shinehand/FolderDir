@@ -8,6 +8,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QDateTime>
+#include <QtCore/QLocale>
 #include <QtWidgets/QFileIconProvider>
 #include <QtConcurrent/QtConcurrentRun>
 #include <QtCore/QFutureWatcher>
