@@ -71,6 +71,27 @@ public slots:
     void setFilter(const QString &pattern);
     void selectAll();
 
+    /** F3 — open selected file(s) with the default viewer application. */
+    void openWithViewer();
+    /** F4 — open selected file(s) with the default text editor. */
+    void openWithEditor();
+    /**
+     * F5 — copy selected items to @p destPath.
+     * Shows a QInputDialog pre-filled with @p destPath; the user can adjust
+     * the path before confirming.
+     */
+    void copyToPath(const QString &destPath = QString());
+    /**
+     * F6 — move selected items to @p destPath.
+     * Shows a QInputDialog pre-filled with @p destPath.
+     */
+    void moveToPath(const QString &destPath = QString());
+    /**
+     * F9 — copy the first selected item to the same directory under a new name.
+     * Shows a QInputDialog asking for the new filename.
+     */
+    void copyAndRename();
+
 signals:
     void pathChanged(const QString &newPath);
     void selectionChanged();

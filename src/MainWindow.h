@@ -16,13 +16,14 @@ class SettingsManager;
 class DriveBar;
 class SearchDialog;
 class PreviewPanel;
+class FolderTreePanel;
 
 /**
  * @brief MainWindow — top-level application window.
  *
  * Hosts up to four FolderPane instances arranged in a 2×2 grid of
  * QSplitters, plus a menu bar, toolbar, drive bar, status bar, and
- * optional side panels (bookmarks, preview).
+ * optional side panels (bookmarks, preview, folder tree).
  */
 class MainWindow : public QMainWindow
 {
@@ -51,6 +52,13 @@ private slots:
     void onSelectAll();
     void onCopyPath();
 
+    // F-key operations
+    void onCopyTo();        ///< F5 — copy selected to a destination path
+    void onMoveTo();        ///< F6 — move selected to a destination path
+    void onViewFile();      ///< F3 — open with viewer
+    void onEditFile();      ///< F4 — open with editor
+    void onProperties();    ///< Alt+Enter — show properties dialog
+
     // View menu
     void onLayout1Pane();
     void onLayout2PanesH();
@@ -60,6 +68,7 @@ private slots:
     void onToggleHidden();
     void onTogglePreview();
     void onToggleBookmarkSidebar();
+    void onToggleFolderTree();
 
     // Tools menu
     void onOpenSearch();
@@ -68,6 +77,8 @@ private slots:
 
     // Bookmarks menu
     void onAddBookmark();
+    void onExportBookmarks();
+    void onImportBookmarks();
 
     // Navigation
     void onNavigateBack();
@@ -78,6 +89,9 @@ private slots:
     void onActivePaneChanged(FolderPane *pane);
     void onSelectionChanged();
     void updateStatusBar();
+
+    // Tree panel
+    void onTreeNavigate(const QString &path);
 
 private:
     void setupUi();
@@ -93,6 +107,8 @@ private:
     void applyLayout(int paneCount);
 
     FolderPane *activePane() const;
+    /** Returns the path of the first other visible pane (for F5/F6 default dest). */
+    QString otherPanePath() const;
 
     // Panes (max 4)
     std::array<FolderPane *, 4> m_panes{};
@@ -107,8 +123,10 @@ private:
     // Dock widgets
     QDockWidget *m_bookmarkDock{nullptr};
     QDockWidget *m_previewDock{nullptr};
+    QDockWidget *m_treeDock{nullptr};
 
-    PreviewPanel *m_previewPanel{nullptr};
+    PreviewPanel    *m_previewPanel{nullptr};
+    FolderTreePanel *m_treePanel{nullptr};
 
     // Toolbar
     QToolBar *m_toolBar{nullptr};
@@ -123,6 +141,7 @@ private:
     QAction *m_actHidden{nullptr};
     QAction *m_actPreview{nullptr};
     QAction *m_actBookmarkSidebar{nullptr};
+    QAction *m_actFolderTree{nullptr};
 
     // Managers
     BookmarkManager *m_bookmarkManager{nullptr};

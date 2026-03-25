@@ -252,14 +252,14 @@
 
 | 스프린트 | 담당 | 작업 내용 |
 |---------|------|-----------|
-| Sprint 1 | B | F-키 완성 · Ctrl+Tab · Alt+Enter 속성 다이얼로그 |
-| Sprint 2 | B | 브레드크럼 주소창 UI (AddressBar 확장) |
-| Sprint 3 | B | 폴더 트리 사이드바 (QTreeView + DockWidget) |
-| Sprint 4 | A | F6 이동 다이얼로그 · F9 이름 바꿔 복사 · F7 매핑 |
-| Sprint 5 | A | CRC 복사 검증 구현 · 즐겨찾기 내보내기 메뉴 연결 |
+| ~~Sprint 1~~ ✅ | B | F-키 완성 (F3·F4·F5·F6·F7·F9·F10) · Ctrl+Tab · Ctrl+W · Alt+Enter 속성 다이얼로그 |
+| ~~Sprint 2~~ ✅ | B | 브레드크럼 주소창 UI (BreadcrumbBar 신규 클래스, AddressBar 대체) |
+| ~~Sprint 3~~ ✅ | B | 폴더 트리 사이드바 (FolderTreePanel: QTreeView + DockWidget) |
+| ~~Sprint 4~~ ✅ | A | F6 이동 다이얼로그 · F9 이름 바꿔 복사 · F7 새 폴더 매핑 |
+| ~~Sprint 5~~ ✅ | A | 즐겨찾기 내보내기·가져오기 메뉴 UI 연결 · 탭 이름 변경(더블클릭) |
 | Sprint 6 | B | 파일/폴더 색상 코딩 (ColorManager 신규 모듈) |
 | Sprint 7 | A | 폴더 크기 컬럼 (백그라운드 스레드 계산) |
-| Sprint 8 | B | 탭 드래그·패널 간 이동 · 탭 이름 변경 |
+| Sprint 8 | B | 탭 드래그·패널 간 이동 |
 | Sprint 9 | C | 패널 동기화 · 패널 잠금/복제 |
 | Sprint 10 | C | 레이아웃 즐겨찾기 저장 (최대 64개) |
 | Sprint 11 | C | PDF 미리보기 (Qt6::Pdf 모듈) |
@@ -560,26 +560,34 @@ src/
 
 > 리더 컨펌 후 즉시 착수 (Sprint 1~3)
 
-#### Sprint 1 — 단축키 완성 (Dev B)
-- [ ] F3 — 기본 파일 뷰어 연동 (연결 프로그램으로 열기)
-- [ ] F4 — 기본 텍스트 편집기 연동
-- [ ] F5 — 복사 다이얼로그 (현재는 새로고침으로 사용 중 → 분리 처리)
-- [ ] F6 — 이동 다이얼로그 (대상 경로 입력)
-- [ ] F7 — 새 폴더 (Ctrl+Shift+N과 동일 동작 추가 매핑)
-- [ ] F9 — 이름 바꿔 복사 다이얼로그
-- [ ] F10 — 애플리케이션 종료
-- [ ] Ctrl+Tab — 현재 패널 다음 탭으로 이동
-- [ ] Alt+Enter — 파일/폴더 속성 다이얼로그 (전체 정보·권한)
+#### Sprint 1 — 단축키 완성 (Dev B) ✅ 완료
+- [x] F3 — 기본 파일 뷰어 연동 (`openWithViewer()`: QDesktopServices)
+- [x] F4 — 기본 텍스트 편집기 연동 (`openWithEditor()`: 플랫폼별 에디터 자동 선택)
+- [x] F5 — 복사 다이얼로그 (`copyToPath()`: 대상 경로 입력, 다른 패널 경로 기본값)
+- [x] F6 — 이동 다이얼로그 (`moveToPath()`: 대상 경로 입력)
+- [x] F7 — 새 폴더 (MainWindow::keyPressEvent → onNewFolder())
+- [x] F9 — 이름 바꿔 복사 다이얼로그 (`copyAndRename()`)
+- [x] F10 — 애플리케이션 종료
+- [x] Ctrl+Tab — 현재 패널 다음 탭으로 이동 (`FolderPane::nextTab()`)
+- [x] Ctrl+W — 탭 닫기 (MainWindow::keyPressEvent에 추가)
+- [x] Alt+Enter — 파일/폴더 속성 다이얼로그 (전체 정보·권한, `showProperties()` QDialog)
 
-#### Sprint 2 — 브레드크럼 주소창 (Dev B)
-- [ ] `BreadcrumbBar` 클래스 신규 작성
-- [ ] 경로 세그먼트를 버튼으로 렌더링, 클릭 시 해당 경로로 이동
-- [ ] 텍스트 편집 모드 토글 (브레드크럼 ↔ 텍스트 입력 전환)
-- [ ] `AddressBar` 를 `BreadcrumbBar` 로 교체 (하위 호환 유지)
+#### Sprint 2 — 브레드크럼 주소창 (Dev B) ✅ 완료
+- [x] `BreadcrumbBar` 클래스 신규 작성 (`src/BreadcrumbBar.h/cpp`)
+- [x] 경로 세그먼트를 버튼으로 렌더링, 클릭 시 해당 경로로 이동
+- [x] 텍스트 편집 모드 토글 (브레드크럼 ↔ 텍스트 입력 전환: 더블클릭 또는 ✎ 버튼)
+- [x] Escape 키로 편집 취소, Enter/Go 버튼으로 이동 확정
+- [x] `FolderPane` 에서 `AddressBar` 를 `BreadcrumbBar` 로 교체 (동일 인터페이스)
 
-#### Sprint 3 — 폴더 트리 사이드바 (Dev B)
-- [ ] `FolderTreePanel` 클래스 작성 (QDockWidget + QTreeView)
-- [ ] `QFileSystemModel` 기반 계층 트리 표시
-- [ ] 트리 항목 클릭 시 활성 패널 이동
-- [ ] 트리 자동 확장 (현재 경로 동기화)
-- [ ] View 메뉴에 "폴더 트리" 토글 항목 추가
+#### Sprint 3 — 폴더 트리 사이드바 (Dev B) ✅ 완료
+- [x] `FolderTreePanel` 클래스 작성 (`src/FolderTreePanel.h/cpp`)
+- [x] `QFileSystemModel` (디렉터리 전용) 기반 계층 트리 표시
+- [x] 트리 항목 클릭 시 활성 패널 이동
+- [x] 트리 자동 확장/선택 동기화 (`setActivePath()`)
+- [x] View 메뉴에 "Folder Tree" 토글 항목 추가 (Ctrl+Shift+T)
+- [x] 패널 전환 시 트리 자동 동기화 (`onActivePaneChanged`)
+
+#### Sprint 4 & 5 — 추가 개선 (Dev A) ✅ 완료
+- [x] F6 이동·F9 복사+이름변경 다이얼로그 (FileSystemBrowser 레벨)
+- [x] 즐겨찾기 내보내기·가져오기 메뉴 UI (Bookmarks 메뉴에 추가)
+- [x] 탭 이름 변경 (더블클릭 또는 우클릭 컨텍스트 메뉴)
