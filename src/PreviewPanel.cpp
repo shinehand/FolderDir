@@ -5,6 +5,7 @@
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtGui/QImageReader>
+#include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QDateTime>
 #include <QtWidgets/QFileIconProvider>

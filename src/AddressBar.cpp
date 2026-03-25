@@ -4,6 +4,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
 #include <QtCore/QDir>
+#include <QtCore/QFileInfo>
 
 // ──────────────────────────────────────────────────────────────────────────────
 AddressBar::AddressBar(QWidget *parent)
