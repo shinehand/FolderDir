@@ -63,6 +63,12 @@ void FileSystemBrowser::setupUi()
     m_detailsView->setDragDropMode(QAbstractItemView::DragDrop);
     m_detailsView->setDefaultDropAction(Qt::CopyAction);
     m_detailsView->setContextMenuPolicy(Qt::CustomContextMenu);
+    // Use SelectedClicked so a second click on an already-selected item starts
+    // inline rename (Windows Explorer behaviour).  DoubleClicked is intentionally
+    // excluded because double-click must navigate into folders via the activated
+    // signal without conflicting with the edit delegate.
+    m_detailsView->setEditTriggers(QAbstractItemView::SelectedClicked |
+                                   QAbstractItemView::EditKeyPressed);
     m_detailsView->header()->setSectionsMovable(true);
     m_detailsView->header()->setStretchLastSection(false);
     m_detailsView->header()->setSectionResizeMode(0, QHeaderView::Stretch);
@@ -91,6 +97,10 @@ void FileSystemBrowser::setupUi()
     m_listView->setDropIndicatorShown(true);
     m_listView->setDragDropMode(QAbstractItemView::DragDrop);
     m_listView->setContextMenuPolicy(Qt::CustomContextMenu);
+    // Mirror the details-view edit-trigger policy: SelectedClicked for rename,
+    // no DoubleClicked so that double-click navigation via activated is clean.
+    m_listView->setEditTriggers(QAbstractItemView::SelectedClicked |
+                                QAbstractItemView::EditKeyPressed);
     m_listView->setViewMode(QListView::ListMode);
     m_listView->setWrapping(true);
     m_listView->setResizeMode(QListView::Adjust);
