@@ -775,11 +775,9 @@ void MainWindow::onLayout4Panes()   { applyLayout(4); }
 void MainWindow::onSetViewMode(ViewMode mode)
 {
     m_currentViewMode = mode;
-    // Apply to all visible panes
-    for (auto *p : m_panes) {
-        if (p && p->isVisible() && p->currentBrowser())
-            p->currentBrowser()->setViewMode(mode);
-    }
+    // 활성 패널에만 뷰 모드 적용 (UX-B01: 패널별 독립 뷰 모드)
+    if (m_activePane)
+        m_activePane->setViewMode(mode);
 }
 
 void MainWindow::onToggleHidden()

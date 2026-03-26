@@ -5,12 +5,14 @@
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QStackedWidget>
+#include <QtWidgets/QToolButton>
 #include <QtCore/QStringList>
 #include <QtCore/QUrl>
 #include <QtCore/QSet>
 
+#include "FileSystemBrowser.h"  // for ViewMode enum
+
 class BreadcrumbBar;
-class FileSystemBrowser;
 class BookmarkManager;
 class DraggableTabBar;
 
@@ -20,6 +22,7 @@ class DraggableTabBar;
  * Contains:
  *  - A tab bar (multiple tabs each holding a path/view)
  *  - A BreadcrumbBar (clickable path segments + editable fallback)
+ *  - A view-mode selector button (Details / List / Icons / Thumbnails) — UX-B01
  *  - A FileSystemBrowser (the actual file list view)
  */
 class FolderPane : public QWidget
@@ -39,6 +42,10 @@ public:
     /** Returns true when this pane has keyboard/mouse focus. */
     bool isActive() const { return m_active; }
     void setActive(bool active);
+
+    /** Get / set the view mode for this pane (UX-B01). */
+    ViewMode viewMode() const { return m_viewMode; }
+    void setViewMode(ViewMode mode);
 
     // Session serialisation helpers
     QStringList tabPaths() const;
@@ -69,6 +76,7 @@ protected:
     void focusInEvent(QFocusEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dragMoveEvent(QDragMoveEvent *event) override;
+    void dragLeaveEvent(QDragLeaveEvent *event) override;
     void dropEvent(QDropEvent *event) override;
 
 private slots:
@@ -89,14 +97,21 @@ private:
     void setActiveStyle();
     /** Show close buttons only when there are ≥2 tabs (matches browser convention). */
     void updateTabCloseButtons();
+    /** Update the view-mode button icon/text to match @p mode. */
+    void syncViewModeButton(ViewMode mode);
 
     DraggableTabBar *m_tabBar{nullptr};
     BreadcrumbBar   *m_addressBar{nullptr};
     QStackedWidget  *m_stack{nullptr};
     QVBoxLayout     *m_layout{nullptr};
+    QToolButton     *m_viewModeBtn{nullptr};  ///< Per-pane view-mode selector (UX-B01)
 
     BookmarkManager *m_bookmarkManager{nullptr};
-    bool m_active{false};
+    bool     m_active{false};
+    ViewMode m_viewMode{ViewMode::Details};   ///< Per-pane view mode (UX-B01)
+
+    /** When true the pane is acting as a file-drop target; renders highlight border. */
+    bool m_dropHighlight{false};
 
     /** Registry of all live FolderPane instances for drag-drop pointer validation. */
     static QSet<FolderPane *> s_liveInstances;

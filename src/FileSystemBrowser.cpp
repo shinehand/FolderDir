@@ -28,6 +28,12 @@
 #include "FileOperations.h"
 #include "FileOperationDialog.h"
 
+// Details 뷰 컬럼 인덱스 (QFileSystemModel 순서 고정) — UX-B02
+static constexpr int COL_NAME = 0;
+static constexpr int COL_SIZE = 1;
+static constexpr int COL_TYPE = 2;
+static constexpr int COL_DATE = 3;
+
 // ──────────────────────────────────────────────────────────────────────────────
 FileSystemBrowser::FileSystemBrowser(const QString &path, QWidget *parent)
     : QWidget(parent)
@@ -71,12 +77,13 @@ void FileSystemBrowser::setupUi()
                                    QAbstractItemView::EditKeyPressed);
     m_detailsView->header()->setSectionsMovable(true);
     m_detailsView->header()->setStretchLastSection(false);
-    m_detailsView->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-    // Hide columns 1-3 (we still have them available but not shown by default)
-    // size | type | date
-    m_detailsView->setColumnWidth(1, 80);
-    m_detailsView->setColumnWidth(2, 100);
-    m_detailsView->setColumnWidth(3, 140);
+    m_detailsView->header()->setSectionResizeMode(COL_NAME, QHeaderView::Stretch);
+    // 헤더 우클릭 컨텍스트 메뉴 활성화 (UX-B02)
+    m_detailsView->header()->setContextMenuPolicy(Qt::CustomContextMenu);
+    // Size/Type/Date 컬럼 기본 너비
+    m_detailsView->setColumnWidth(COL_SIZE, 80);
+    m_detailsView->setColumnWidth(COL_TYPE, 100);
+    m_detailsView->setColumnWidth(COL_DATE, 140);
 
     connect(m_detailsView, &QTreeView::activated,
             this, &FileSystemBrowser::onItemActivated);
@@ -87,6 +94,9 @@ void FileSystemBrowser::setupUi()
             this, [this]() { emit selectionChanged(); });
     connect(m_detailsView->header(), &QHeaderView::sortIndicatorChanged,
             this, &FileSystemBrowser::onSortIndicatorChanged);
+    // 헤더 우클릭 → 컬럼 표시/숨김 메뉴 (UX-B02)
+    connect(m_detailsView->header(), &QHeaderView::customContextMenuRequested,
+            this, &FileSystemBrowser::onHeaderContextMenu);
 
     // ── List view ────────────────────────────────────────────────────────
     m_listView = new QListView(this);
@@ -668,6 +678,35 @@ void FileSystemBrowser::onFilterChanged(const QString &text)
 void FileSystemBrowser::onSortIndicatorChanged(int column, Qt::SortOrder order)
 {
     m_model->sort(column, order);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// UX-B02: 헤더 우클릭 → 컬럼 표시/숨김 컨텍스트 메뉴
+void FileSystemBrowser::onHeaderContextMenu(const QPoint &pos)
+{
+    QHeaderView *header = m_detailsView->header();
+
+    // COL_NAME(0)은 항상 표시; COL_SIZE/TYPE/DATE 만 토글 가능 (UX-B02)
+    static const struct { int col; const char *label; } kColumns[] = {
+        { COL_SIZE, QT_TR_NOOP("Size")          },
+        { COL_TYPE, QT_TR_NOOP("Type")          },
+        { COL_DATE, QT_TR_NOOP("Date Modified") },
+    };
+
+    QMenu menu(this);
+    menu.setTitle(tr("Columns"));
+
+    for (const auto &c : kColumns) {
+        auto *act = menu.addAction(tr(c.label));
+        act->setCheckable(true);
+        act->setChecked(!header->isSectionHidden(c.col));
+        const int col = c.col;
+        connect(act, &QAction::triggered, this, [this, col](bool checked) {
+            m_detailsView->header()->setSectionHidden(col, !checked);
+        });
+    }
+
+    menu.exec(header->mapToGlobal(pos));
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

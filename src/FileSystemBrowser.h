@@ -105,6 +105,7 @@ private slots:
     void onContextMenu(const QPoint &pos);
     void onFilterChanged(const QString &text);
     void onSortIndicatorChanged(int column, Qt::SortOrder order);
+    void onHeaderContextMenu(const QPoint &pos);  ///< 컬럼 표시/숨김 (UX-B02)
 
 private:
     void setupUi();

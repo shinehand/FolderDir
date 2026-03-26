@@ -8,10 +8,12 @@
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QToolButton>
 #include <QtWidgets/QApplication>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QDrag>
 #include <QtGui/QDragEnterEvent>
+#include <QtGui/QDragLeaveEvent>
 #include <QtGui/QDropEvent>
 #include <QtGui/QFileIconProvider>
 #include <QtCore/QDir>
@@ -164,9 +166,46 @@ void FolderPane::setupUi()
     tabWidget->setLayout(tabRow);
     m_layout->addWidget(tabWidget);
 
-    // ── Breadcrumb address bar (SECOND — below the tab bar) ───────────────
+    // ── Breadcrumb / view-mode row (SECOND — below the tab bar) ──────────
+    QHBoxLayout *addrRow = new QHBoxLayout;
+    addrRow->setContentsMargins(0, 0, 0, 0);
+    addrRow->setSpacing(2);
+
     m_addressBar = new BreadcrumbBar(this);
-    m_layout->addWidget(m_addressBar);
+    addrRow->addWidget(m_addressBar, 1);
+
+    // Per-pane view-mode selector (UX-B01): small dropdown button on the right
+    m_viewModeBtn = new QToolButton(this);
+    m_viewModeBtn->setToolTip(tr("View Mode"));
+    m_viewModeBtn->setPopupMode(QToolButton::InstantPopup);
+    m_viewModeBtn->setFixedSize(28, 24);
+
+    auto *vmMenu = new QMenu(m_viewModeBtn);
+    auto makeVmAct = [&](const QString &label, ViewMode mode) {
+        auto *act = vmMenu->addAction(label);
+        act->setCheckable(true);
+        connect(act, &QAction::triggered, this, [this, mode]() { setViewMode(mode); });
+        return act;
+    };
+    auto *actVmDetails    = makeVmAct(tr("Details"),    ViewMode::Details);
+    auto *actVmList       = makeVmAct(tr("List"),       ViewMode::List);
+    auto *actVmIcons      = makeVmAct(tr("Icons"),      ViewMode::Icons);
+    auto *actVmThumbnails = makeVmAct(tr("Thumbnails"), ViewMode::Thumbnails);
+    actVmDetails->setChecked(true); // default
+
+    // Keep a reference so syncViewModeButton can update checked state
+    vmMenu->setProperty("actDetails",    QVariant::fromValue(actVmDetails));
+    vmMenu->setProperty("actList",       QVariant::fromValue(actVmList));
+    vmMenu->setProperty("actIcons",      QVariant::fromValue(actVmIcons));
+    vmMenu->setProperty("actThumbnails", QVariant::fromValue(actVmThumbnails));
+
+    m_viewModeBtn->setMenu(vmMenu);
+    syncViewModeButton(ViewMode::Details);
+    addrRow->addWidget(m_viewModeBtn);
+
+    auto *addrWidget = new QWidget(this);
+    addrWidget->setLayout(addrRow);
+    m_layout->addWidget(addrWidget);
 
     // ── Stacked file-browser content (THIRD) ─────────────────────────────
     m_stack = new QStackedWidget(this);
@@ -199,6 +238,9 @@ void FolderPane::addTabInternal(const QString &path)
             this, &FolderPane::onBrowserPathChanged);
     connect(browser, &FileSystemBrowser::selectionChanged,
             this, &FolderPane::onBrowserSelectionChanged);
+
+    // 이 패널의 현재 뷰 모드를 새 탭에도 적용 (UX-B01)
+    browser->setViewMode(m_viewMode);
 
     m_stack->addWidget(browser);
     const QString label = QDir(path).dirName();
@@ -240,13 +282,59 @@ void FolderPane::setActive(bool active)
 
 void FolderPane::setActiveStyle()
 {
-    if (m_active) {
+    if (m_dropHighlight) {
+        // 파일 드롭 대상으로 하이라이트 중 (UX-B04)
+        setStyleSheet(QStringLiteral(
+            "FolderPane { border: 2px dashed palette(highlight); background: palette(alternateBase); }"));
+    } else if (m_active) {
         setStyleSheet(QStringLiteral(
             "FolderPane { border: 2px solid palette(highlight); }"));
     } else {
         setStyleSheet(QStringLiteral(
             "FolderPane { border: 2px solid palette(mid); }"));
     }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// UX-B01: 패널별 뷰 모드 — 이 패널의 현재 브라우저에만 적용
+void FolderPane::setViewMode(ViewMode mode)
+{
+    m_viewMode = mode;
+    if (auto *b = currentBrowser())
+        b->setViewMode(mode);
+    syncViewModeButton(mode);
+}
+
+void FolderPane::syncViewModeButton(ViewMode mode)
+{
+    if (!m_viewModeBtn) return;
+    struct { ViewMode mode; const char *label; const char *tooltip; } labels[] = {
+        { ViewMode::Details,    "≡", QT_TR_NOOP("Details")    },
+        { ViewMode::List,       "☰", QT_TR_NOOP("List")       },
+        { ViewMode::Icons,      "⊞", QT_TR_NOOP("Icons")      },
+        { ViewMode::Thumbnails, "▦", QT_TR_NOOP("Thumbnails") },
+    };
+    for (const auto &l : labels) {
+        if (l.mode == mode) {
+            m_viewModeBtn->setText(QLatin1String(l.label));
+            // 접근성: 현재 선택된 뷰 모드를 툴팁으로도 제공
+            m_viewModeBtn->setToolTip(tr("View Mode: %1").arg(tr(l.tooltip)));
+            m_viewModeBtn->setAccessibleName(tr("View Mode: %1").arg(tr(l.tooltip)));
+            break;
+        }
+    }
+
+    // 체크 상태 동기화
+    auto *menu = m_viewModeBtn->menu();
+    if (!menu) return;
+    auto syncAct = [&](const char *propName, ViewMode m) {
+        if (auto *act = menu->property(propName).value<QAction *>())
+            act->setChecked(m == mode);
+    };
+    syncAct("actDetails",    ViewMode::Details);
+    syncAct("actList",       ViewMode::List);
+    syncAct("actIcons",      ViewMode::Icons);
+    syncAct("actThumbnails", ViewMode::Thumbnails);
 }
 
 void FolderPane::updateTabCloseButtons()
@@ -449,22 +537,45 @@ void FolderPane::focusInEvent(QFocusEvent *event)
 // ──────────────────────────────────────────────────────────────────────────────
 void FolderPane::dragEnterEvent(QDragEnterEvent *event)
 {
-    if (event->mimeData()->hasFormat(QLatin1String(k_tabDragMime)))
+    const QMimeData *mime = event->mimeData();
+    if (mime->hasFormat(QLatin1String(k_tabDragMime))) {
+        // 탭 드래그: 수락 + 하이라이트 (UX-B04)
+        m_dropHighlight = true;
+        setActiveStyle();
         event->acceptProposedAction();
-    else
+    } else if (mime->hasUrls()) {
+        // 파일/폴더 드래그: 수락 + 하이라이트 (UX-B04)
+        m_dropHighlight = true;
+        setActiveStyle();
+        event->acceptProposedAction();
+    } else {
         QWidget::dragEnterEvent(event);
+    }
 }
 
 void FolderPane::dragMoveEvent(QDragMoveEvent *event)
 {
-    if (event->mimeData()->hasFormat(QLatin1String(k_tabDragMime)))
+    const QMimeData *mime = event->mimeData();
+    if (mime->hasFormat(QLatin1String(k_tabDragMime)) || mime->hasUrls())
         event->acceptProposedAction();
     else
         QWidget::dragMoveEvent(event);
 }
 
+void FolderPane::dragLeaveEvent(QDragLeaveEvent *event)
+{
+    // 드래그가 패널을 벗어나면 하이라이트 해제 (UX-B04)
+    m_dropHighlight = false;
+    setActiveStyle();
+    QWidget::dragLeaveEvent(event);
+}
+
 void FolderPane::dropEvent(QDropEvent *event)
 {
+    // 하이라이트 항상 해제
+    m_dropHighlight = false;
+    setActiveStyle();
+
     if (!event->mimeData()->hasFormat(QLatin1String(k_tabDragMime))) {
         QWidget::dropEvent(event);
         return;
