@@ -8,18 +8,111 @@
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QApplication>
 #include <QtGui/QMouseEvent>
+#include <QtGui/QDrag>
+#include <QtGui/QDragEnterEvent>
+#include <QtGui/QDropEvent>
 #include <QtCore/QDir>
+#include <QtCore/QMimeData>
 
 #include "BreadcrumbBar.h"
 #include "FileSystemBrowser.h"
 #include "BookmarkManager.h"
+
+static const char *k_tabDragMime = "application/x-folderdir-tabdrag";
+
+// ──────────────────────────────────────────────────────────────────────────────
+/**
+ * @brief DraggableTabBar — QTabBar that supports dragging a tab to another pane.
+ *
+ * Drags are encoded as "pane_hex|tab_index|tab_path" in a custom MIME type.
+ * When the drag completes with Qt::MoveAction the source tab is removed.
+ */
+class DraggableTabBar : public QTabBar
+{
+public:
+    explicit DraggableTabBar(FolderPane *pane, QWidget *parent = nullptr)
+        : QTabBar(parent), m_pane(pane) {}
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override
+    {
+        if (event->button() == Qt::LeftButton) {
+            m_dragStart    = event->pos();
+            m_dragTabIndex = tabAt(event->pos());
+        }
+        QTabBar::mousePressEvent(event);
+    }
+
+    void mouseMoveEvent(QMouseEvent *event) override
+    {
+        if (m_dragTabIndex < 0) {
+            QTabBar::mouseMoveEvent(event);
+            return;
+        }
+        if (!(event->buttons() & Qt::LeftButton)) {
+            QTabBar::mouseMoveEvent(event);
+            return;
+        }
+
+        const QPoint delta = event->pos() - m_dragStart;
+        if (delta.manhattanLength() < QApplication::startDragDistance()) {
+            QTabBar::mouseMoveEvent(event);
+            return;
+        }
+
+        // Only start cross-pane drag when the cursor leaves the tab bar
+        if (rect().contains(event->pos())) {
+            QTabBar::mouseMoveEvent(event);
+            return;
+        }
+
+        // Build MIME payload: "pane_hex|tab_index|tab_path"
+        const QString paneHex  = QString::number(
+            reinterpret_cast<quintptr>(m_pane), 16);
+        const QString tabPath  = m_pane->tabPaths().value(m_dragTabIndex);
+        const QString payload  = paneHex
+                               + QLatin1Char('|')
+                               + QString::number(m_dragTabIndex)
+                               + QLatin1Char('|')
+                               + tabPath;
+
+        auto *mime = new QMimeData;
+        mime->setData(QLatin1String(k_tabDragMime), payload.toUtf8());
+
+        auto *drag = new QDrag(this);
+        drag->setMimeData(mime);
+        drag->setPixmap(grab(tabRect(m_dragTabIndex)));
+
+        const int srcIndex = m_dragTabIndex;
+        m_dragTabIndex = -1; // reset before exec blocks
+
+        const Qt::DropAction action = drag->exec(Qt::MoveAction);
+        if (action == Qt::MoveAction) {
+            // Source tab was accepted by a different pane — remove it here
+            m_pane->closeTab(srcIndex);
+        }
+    }
+
+    void mouseReleaseEvent(QMouseEvent *event) override
+    {
+        m_dragTabIndex = -1;
+        QTabBar::mouseReleaseEvent(event);
+    }
+
+private:
+    FolderPane *m_pane{nullptr};
+    QPoint      m_dragStart;
+    int         m_dragTabIndex{-1};
+};
 
 // ──────────────────────────────────────────────────────────────────────────────
 FolderPane::FolderPane(BookmarkManager *bm, QWidget *parent)
     : QWidget(parent)
     , m_bookmarkManager(bm)
 {
+    setAcceptDrops(true);
     setupUi();
     // Default: open home directory
     addTabInternal(QDir::homePath());
@@ -39,7 +132,7 @@ void FolderPane::setupUi()
     m_layout->addWidget(m_addressBar);
 
     // Tab bar
-    m_tabBar = new QTabBar(this);
+    m_tabBar = new DraggableTabBar(this, this);
     m_tabBar->setTabsClosable(true);
     m_tabBar->setMovable(true);
     m_tabBar->setExpanding(false);
@@ -320,4 +413,49 @@ void FolderPane::focusInEvent(QFocusEvent *event)
 {
     emit paneActivated(this);
     QWidget::focusInEvent(event);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+void FolderPane::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()->hasFormat(QLatin1String(k_tabDragMime)))
+        event->acceptProposedAction();
+    else
+        QWidget::dragEnterEvent(event);
+}
+
+void FolderPane::dragMoveEvent(QDragMoveEvent *event)
+{
+    if (event->mimeData()->hasFormat(QLatin1String(k_tabDragMime)))
+        event->acceptProposedAction();
+    else
+        QWidget::dragMoveEvent(event);
+}
+
+void FolderPane::dropEvent(QDropEvent *event)
+{
+    if (!event->mimeData()->hasFormat(QLatin1String(k_tabDragMime))) {
+        QWidget::dropEvent(event);
+        return;
+    }
+
+    const QString payload = QString::fromUtf8(
+        event->mimeData()->data(QLatin1String(k_tabDragMime)));
+    const QStringList parts = payload.split(QLatin1Char('|'));
+    if (parts.size() < 3) return;
+
+    bool ok = false;
+    const quintptr panePtr = parts.at(0).toULongLong(&ok, 16);
+    if (!ok) return;
+    auto *sourcePane = reinterpret_cast<FolderPane *>(panePtr);
+
+    const int srcIndex = parts.at(1).toInt();
+    const QString tabPath = parts.mid(2).join(QLatin1Char('|')); // path may contain '|'
+
+    if (sourcePane == this) return; // same-pane moves handled by QTabBar
+
+    newTab(tabPath);
+    // Signal MoveAction so the source removes the tab
+    event->setDropAction(Qt::MoveAction);
+    event->accept();
 }

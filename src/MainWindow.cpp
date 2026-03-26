@@ -30,6 +30,7 @@
 #include "SettingsDialog.h"
 #include "FileSystemBrowser.h"
 #include "FolderTreePanel.h"
+#include "ColorRulesDialog.h"
 
 // ──────────────────────────────────────────────────────────────────────────────
 MainWindow::MainWindow(QWidget *parent)
@@ -181,6 +182,7 @@ void MainWindow::setupMenuBar()
     toolsMenu->addAction(tr("&Search…"), this, &MainWindow::onOpenSearch,
                          QKeySequence(Qt::CTRL | Qt::Key_F));
     toolsMenu->addAction(tr("Open &Terminal"), this, &MainWindow::onOpenTerminal);
+    toolsMenu->addAction(tr("&Colour Rules…"), this, &MainWindow::onOpenColorRules);
     toolsMenu->addSeparator();
     toolsMenu->addAction(tr("&Settings…"), this, &MainWindow::onOpenSettings);
 
@@ -705,6 +707,12 @@ void MainWindow::onOpenSettings()
     if (dlg.exec() == QDialog::Accepted) {
         m_settingsManager->applyTheme();
     }
+}
+
+void MainWindow::onOpenColorRules()
+{
+    ColorRulesDialog dlg(this);
+    dlg.exec();
 }
 
 void MainWindow::onOpenTerminal()

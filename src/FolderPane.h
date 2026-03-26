@@ -11,6 +11,7 @@
 class BreadcrumbBar;
 class FileSystemBrowser;
 class BookmarkManager;
+class DraggableTabBar;
 
 /**
  * @brief FolderPane — one panel in the multi-pane layout.
@@ -65,6 +66,9 @@ signals:
 protected:
     void mousePressEvent(QMouseEvent *event) override;
     void focusInEvent(QFocusEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dragMoveEvent(QDragMoveEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 
 private slots:
     void onTabChanged(int index);
@@ -83,10 +87,10 @@ private:
     void syncAddressBar();
     void setActiveStyle();
 
-    QTabBar        *m_tabBar{nullptr};
-    BreadcrumbBar  *m_addressBar{nullptr};
-    QStackedWidget *m_stack{nullptr};
-    QVBoxLayout    *m_layout{nullptr};
+    DraggableTabBar *m_tabBar{nullptr};
+    BreadcrumbBar   *m_addressBar{nullptr};
+    QStackedWidget  *m_stack{nullptr};
+    QVBoxLayout     *m_layout{nullptr};
 
     BookmarkManager *m_bookmarkManager{nullptr};
     bool m_active{false};

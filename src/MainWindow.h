@@ -74,6 +74,7 @@ private slots:
     void onOpenSearch();
     void onOpenSettings();
     void onOpenTerminal();
+    void onOpenColorRules();
 
     // Bookmarks menu
     void onAddBookmark();
