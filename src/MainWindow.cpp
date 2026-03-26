@@ -340,6 +340,28 @@ void MainWindow::setupToolBar()
     m_toolBar->addAction(
         QIcon::fromTheme(QStringLiteral("preferences-system")), tr("Settings"),
         this, &MainWindow::onOpenSettings);
+
+    m_toolBar->addSeparator();
+
+    // SP-9: Pane sync / lock / clone
+    m_actPaneSync = m_toolBar->addAction(
+        QIcon::fromTheme(QStringLiteral("emblem-synchronizing")), tr("Sync Panes"));
+    m_actPaneSync->setToolTip(tr("Sync navigation across all visible panes"));
+    m_actPaneSync->setCheckable(true);
+    m_actPaneSync->setChecked(false);
+    connect(m_actPaneSync, &QAction::triggered, this, &MainWindow::onTogglePaneSync);
+
+    m_actLockPane = m_toolBar->addAction(
+        QIcon::fromTheme(QStringLiteral("changes-prevent")), tr("Lock Pane"));
+    m_actLockPane->setToolTip(tr("Lock / unlock the active pane (prevent navigation)"));
+    m_actLockPane->setCheckable(true);
+    m_actLockPane->setChecked(false);
+    connect(m_actLockPane, &QAction::triggered, this, &MainWindow::onLockPane);
+
+    m_actClonePane = m_toolBar->addAction(
+        QIcon::fromTheme(QStringLiteral("edit-copy")), tr("Clone Pane"));
+    m_actClonePane->setToolTip(tr("Copy active pane's path to all other visible panes"));
+    connect(m_actClonePane, &QAction::triggered, this, &MainWindow::onClonePane);
 }
 
 void MainWindow::setupDriveBar()
@@ -467,6 +489,13 @@ void MainWindow::setupConnections()
             if (m_treeDock->isVisible())
                 m_treePanel->setActivePath(path);
             updateStatusBar();
+            // SP-9: propagate navigation to all other visible panes when sync is on
+            if (m_paneSyncEnabled) {
+                for (int i = 0; i < m_paneCount; ++i) {
+                    if (m_panes[i] && m_panes[i] != pane && m_panes[i]->isVisible())
+                        m_panes[i]->navigateTo(path);
+                }
+            }
         });
     }
 }
@@ -681,6 +710,10 @@ void MainWindow::onActivePaneChanged(FolderPane *pane)
     // Sync folder tree to the newly active pane's path
     if (m_treeDock && m_treeDock->isVisible() && pane)
         m_treePanel->setActivePath(pane->currentPath());
+
+    // SP-9: reflect the new active pane's lock state in the toolbar button
+    if (m_actLockPane)
+        m_actLockPane->setChecked(pane && pane->isLocked());
 }
 
 void MainWindow::onSelectionChanged()
@@ -968,4 +1001,35 @@ void MainWindow::onTreeNavigate(const QString &path)
 {
     if (m_activePane)
         m_activePane->navigateTo(path);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// SP-9: Panel sync / lock / clone
+// ──────────────────────────────────────────────────────────────────────────────
+void MainWindow::onTogglePaneSync()
+{
+    m_paneSyncEnabled = m_actPaneSync ? m_actPaneSync->isChecked() : !m_paneSyncEnabled;
+    if (m_actPaneSync)
+        m_actPaneSync->setChecked(m_paneSyncEnabled);
+}
+
+void MainWindow::onLockPane()
+{
+    auto *pane = activePane();
+    if (!pane) return;
+    const bool locked = !pane->isLocked();
+    pane->setLocked(locked);
+    if (m_actLockPane)
+        m_actLockPane->setChecked(locked);
+}
+
+void MainWindow::onClonePane()
+{
+    auto *src = activePane();
+    if (!src) return;
+    const QString path = src->currentPath();
+    for (int i = 0; i < m_paneCount; ++i) {
+        if (m_panes[i] && m_panes[i] != src && m_panes[i]->isVisible())
+            m_panes[i]->navigateTo(path);
+    }
 }

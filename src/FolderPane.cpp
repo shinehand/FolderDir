@@ -295,12 +295,22 @@ void FolderPane::setActive(bool active)
     setActiveStyle();
 }
 
+void FolderPane::setLocked(bool locked)
+{
+    m_locked = locked;
+    setActiveStyle();
+}
+
 void FolderPane::setActiveStyle()
 {
     if (m_dropHighlight) {
         // 파일 드롭 대상으로 하이라이트 중 (UX-B04)
         setStyleSheet(QStringLiteral(
             "FolderPane { border: 2px dashed palette(highlight); background: palette(alternateBase); }"));
+    } else if (m_locked) {
+        // SP-9: locked pane — orange border to indicate navigation is prevented
+        setStyleSheet(QStringLiteral(
+            "FolderPane { border: 2px solid orange; }"));
     } else if (m_active) {
         setStyleSheet(QStringLiteral(
             "FolderPane { border: 2px solid palette(highlight); }"));
@@ -363,6 +373,7 @@ void FolderPane::updateTabCloseButtons()
 // ──────────────────────────────────────────────────────────────────────────────
 void FolderPane::navigateTo(const QString &path)
 {
+    if (m_locked) return;
     auto *b = currentBrowser();
     if (b) b->setPath(path);
 }
