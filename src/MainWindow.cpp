@@ -3,7 +3,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QMenu>
-#include <QtWidgets/QActionGroup>
+#include <QtGui/QActionGroup>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QDockWidget>
@@ -93,6 +93,7 @@ void MainWindow::setupUi()
     // Create all four panes
     for (int i = 0; i < 4; ++i) {
         m_panes[i] = new FolderPane(m_bookmarkManager, this);
+        m_panes[i]->setSettingsManager(m_settingsManager);  // GAP-001/002
         connect(m_panes[i], &FolderPane::paneActivated,
                 this, &MainWindow::onActivePaneChanged);
         connect(m_panes[i], &FolderPane::selectionChanged,
@@ -379,11 +380,15 @@ void MainWindow::setupDockWidgets()
     addDockWidget(Qt::LeftDockWidgetArea, m_bookmarkDock);
     m_bookmarkDock->hide();
 
-    auto rebuildList = [this]() {
+    auto *isDragging = new bool(false);
+    connect(m_bookmarkList, &QListWidget::itemPressed, this,
+            [isDragging]() { *isDragging = true; });
+
+    auto rebuildList = [this, isDragging]() {
         // Guard: if a drag is in progress, the model will call rowsMoved which
         // triggers BookmarkManager::move(). Rebuilding here would clear the
         // QListWidget mid-drag. Only rebuild when NOT in a drag.
-        if (m_bookmarkList->state() == QAbstractItemView::DraggingState)
+        if (*isDragging)
             return;
         m_bookmarkList->clear();
         for (const BookmarkEntry &e : m_bookmarkManager->bookmarks()) {
@@ -403,7 +408,7 @@ void MainWindow::setupDockWidgets()
     });
     // Propagate drag reorder → BookmarkManager (UX-B05)
     connect(m_bookmarkList->model(), &QAbstractItemModel::rowsMoved, this,
-            [this](const QModelIndex &, int srcRow, int srcRowEnd,
+            [this, isDragging](const QModelIndex &, int srcRow, int srcRowEnd,
                    const QModelIndex &, int dstRow) {
         Q_UNUSED(srcRowEnd)
         // Qt's rowsMoved gives dstRow as the position *before* which the row
@@ -413,6 +418,7 @@ void MainWindow::setupDockWidgets()
         // reported, so the effective final index is dstRow - 1.
         const int target = (dstRow > srcRow) ? dstRow - 1 : dstRow;
         m_bookmarkManager->move(srcRow, target);
+        *isDragging = false;  // drag complete
     });
 
     // ── Preview panel ─────────────────────────────────────────────────────

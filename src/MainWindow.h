@@ -2,7 +2,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
-#include <QtWidgets/QActionGroup>
+#include <QtGui/QActionGroup>
 #include <QtGui/QAction>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QStatusBar>
@@ -74,6 +74,11 @@ private slots:
     void onToggleBookmarkSidebar();
     void onToggleFolderTree();
     void onSetViewMode(ViewMode mode); ///< Apply view mode to all visible panes
+
+    // SP-9: Panel sync / lock / clone
+    void onTogglePaneSync();    ///< Toggle directory-sync across all visible panes
+    void onLockPane();          ///< Lock / unlock the active pane (prevent navigation)
+    void onClonePane();         ///< Clone active pane's current path to other panes
 
     // Tools menu
     void onOpenSearch();
@@ -148,6 +153,14 @@ private:
     QAction *m_actPreview{nullptr};
     QAction *m_actBookmarkSidebar{nullptr};
     QAction *m_actFolderTree{nullptr};
+
+    // SP-9: pane panel actions
+    QAction *m_actPaneSync{nullptr};   ///< Toggle sync-navigation
+    QAction *m_actLockPane{nullptr};   ///< Lock/unlock active pane
+    QAction *m_actClonePane{nullptr};  ///< Clone active pane path to others
+
+    // SP-9: sync state
+    bool m_paneSyncEnabled{false};
 
     // View mode actions (exclusive group in View > View Mode sub-menu)
     QAction *m_actViewDetails{nullptr};

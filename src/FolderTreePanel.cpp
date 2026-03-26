@@ -6,7 +6,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QHeaderView>
 #include <QtGui/QFileSystemModel>
-#include <QtGui/QFileIconProvider>
+#include <QtWidgets/QFileIconProvider>
 #include <QtCore/QDir>
 #include <QtCore/QStandardPaths>
 #include <QtCore/QFileInfo>

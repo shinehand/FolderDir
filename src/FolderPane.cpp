@@ -15,7 +15,7 @@
 #include <QtGui/QDragEnterEvent>
 #include <QtGui/QDragLeaveEvent>
 #include <QtGui/QDropEvent>
-#include <QtGui/QFileIconProvider>
+#include <QtWidgets/QFileIconProvider>
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QMimeData>
@@ -232,6 +232,17 @@ void FolderPane::setupUi()
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+void FolderPane::setSettingsManager(SettingsManager *mgr)
+{
+    m_settingsMgr = mgr;
+    // Propagate to all existing browsers
+    for (int i = 0; i < m_stack->count(); ++i) {
+        if (auto *b = browserAt(i))
+            b->setSettingsManager(mgr);
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 void FolderPane::addTabInternal(const QString &path)
 {
     auto *browser = new FileSystemBrowser(path, this);
@@ -242,6 +253,9 @@ void FolderPane::addTabInternal(const QString &path)
 
     // 이 패널의 현재 뷰 모드를 새 탭에도 적용 (UX-B01)
     browser->setViewMode(m_viewMode);
+    // 설정 주입 (GAP-001/002)
+    if (m_settingsMgr)
+        browser->setSettingsManager(m_settingsMgr);
 
     m_stack->addWidget(browser);
     const QString label = QDir(path).dirName();
