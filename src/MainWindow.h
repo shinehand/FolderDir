@@ -8,6 +8,7 @@
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QDockWidget>
+#include <QtWidgets/QListWidget>
 #include <QtCore/QSettings>
 #include <array>
 
@@ -154,6 +155,15 @@ private:
     QAction *m_actViewIcons{nullptr};
     QAction *m_actViewThumbnails{nullptr};
     ViewMode m_currentViewMode{ViewMode::Details};
+
+    // Pane-count toolbar actions (exclusive group; checked = active count)
+    QAction *m_actPane1{nullptr};
+    QAction *m_actPane2{nullptr};
+    QAction *m_actPane3{nullptr};
+    QAction *m_actPane4{nullptr};
+
+    // Bookmark list widget (promoted to member for drag-reorder wiring)
+    QListWidget *m_bookmarkList{nullptr};
 
     // Managers
     BookmarkManager *m_bookmarkManager{nullptr};

@@ -619,21 +619,27 @@ m_listView->setEditTriggers(QAbstractItemView::SelectedClicked |
 |---|------|------|---------------|
 | UX-B01 | **뷰 모드 퍼-패널 독립성** | 현재 View Mode 메뉴는 모든 패널에 동시 적용됨. Q-Dir처럼 패널별 독립 뷰 모드 선택이 필요 (각 패널 우클릭 컨텍스트 메뉴 또는 툴바에 드롭다운 추가) | Sprint 9 |
 | UX-B02 | **컬럼 표시/숨김 UI** | 상세 보기에서 이름·크기·유형·수정일 컬럼을 사용자가 헤더 우클릭으로 숨기거나 표시할 수 없음 | Sprint 9 |
-| UX-B03 | **탭에 파일 경로 아이콘** | 탭 레이블에 폴더 아이콘(QFileIconProvider)을 표시하면 다수 탭 구분이 용이 | Sprint 9 |
+| UX-B03 | **탭에 파일 경로 아이콘** | 탭 레이블에 폴더 아이콘(QFileIconProvider)을 표시하면 다수 탭 구분이 용이 | ✅ 수정 완료 |
 | UX-B04 | **드래그 앤 드롭 시각 피드백** | 파일을 다른 패널로 드래그할 때 드롭 가능 영역 하이라이트가 없음. QDrag 픽스맵과 `dragMoveEvent` 스타일 추가 필요 | Sprint 9 |
-| UX-B05 | **북마크 사이드바 드래그 순서 변경** | `QListWidget` 기반 북마크 사이드바가 드래그 재정렬을 지원하지 않음 (`DragDropMode::InternalMove` 미설정) | Sprint 9 |
-| UX-B06 | **특수 폴더 빠른 접근** | 폴더 트리 상단에 Desktop·Documents·Downloads 고정 항목 추가 (`QStandardPaths` 활용) | Sprint 9 |
+| UX-B05 | **북마크 사이드바 드래그 순서 변경** | `QListWidget` 기반 북마크 사이드바가 드래그 재정렬을 지원하지 않음 (`DragDropMode::InternalMove` 미설정) | ✅ 수정 완료 |
+| UX-B06 | **특수 폴더 빠른 접근** | 폴더 트리 상단에 Desktop·Documents·Downloads 고정 항목 추가 (`QStandardPaths` 활용) | ✅ 수정 완료 |
 | UX-B07 | **패널 전환 시 포커스 표시** | 활성 패널 border 색은 있으나 비활성 상태에서 어느 패널이 활성인지 초기 시작 시 명확하지 않음 — 초기 로드 시 `pane[0]->setActive(true)` 호출 필요 | ✅ 수정 완료 |
-| UX-B08 | **패널 1개 모드에서 레이아웃 버튼 상태** | 툴바의 패널 수 버튼이 현재 상태를 반영하는 시각적 활성 상태(checked/pressed)가 없음 | Sprint 9 |
+| UX-B08 | **패널 1개 모드에서 레이아웃 버튼 상태** | 툴바의 패널 수 버튼이 현재 상태를 반영하는 시각적 활성 상태(checked/pressed)가 없음 | ✅ 수정 완료 |
 
 ---
 
-#### 0.8.4 Sprint 9 추가 UX 작업 반영 (Updated Sprint 9 Scope)
+#### 0.8.5 추가 개선 사항 수집 (Sprint 9 — 2026-03-26)
 
-| 스프린트 | 담당 | 원래 작업 | 추가 UX 작업 |
-|---------|------|-----------|-------------|
-| Sprint 9 | C | 패널 동기화 · 패널 잠금/복제 | + UX-B01 (뷰 모드 퍼-패널) · UX-B07 (초기 활성 패널) |
-| Sprint 9 | B | (추가) | UX-B02 컬럼 UI · UX-B03 탭 아이콘 · UX-B04 DnD 피드백 · UX-B05 북마크 재정렬 · UX-B06 특수 폴더 |
+> 백로그 UX-B03/B05/B06/B08 를 Sprint 9에서 구현 완료
+
+| 수정 파일 | 수정 내용 |
+|-----------|-----------|
+| `src/MainWindow.h` | `m_actPane1~4` 멤버 추가, `m_bookmarkList` 멤버 추가, `QListWidget` include |
+| `src/MainWindow.cpp` | UX-B08: 패널 버튼 `QActionGroup` 배타 그룹 + `setCheckable(true)`; `applyLayout()` 에서 `setChecked` 동기화 |
+| `src/MainWindow.cpp` | UX-B05: `m_bookmarkList` 드래그 모드 `InternalMove`; `rowsMoved` → `BookmarkManager::move()` 연결 |
+| `src/FolderPane.cpp` | UX-B03: `addTabInternal()` 및 `onBrowserPathChanged()` 에서 `QFileIconProvider`로 탭 아이콘 설정 |
+| `src/FolderTreePanel.h` | UX-B06: `m_quickAccess(QListWidget)` 멤버 추가, `buildQuickAccess()` 선언 |
+| `src/FolderTreePanel.cpp` | UX-B06: "Quick Access" 섹션 (Home/Desktop/Documents/Downloads/Music/Pictures/Videos) 폴더 트리 상단에 추가 |
 
 ---
 

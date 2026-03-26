@@ -13,7 +13,9 @@
 #include <QtGui/QDrag>
 #include <QtGui/QDragEnterEvent>
 #include <QtGui/QDropEvent>
+#include <QtGui/QFileIconProvider>
 #include <QtCore/QDir>
+#include <QtCore/QFileInfo>
 #include <QtCore/QMimeData>
 
 #include "BreadcrumbBar.h"
@@ -200,9 +202,15 @@ void FolderPane::addTabInternal(const QString &path)
 
     m_stack->addWidget(browser);
     const QString label = QDir(path).dirName();
+    const int tabIdx = m_tabBar->count();
     m_tabBar->addTab(label.isEmpty() ? path : label);
-    m_tabBar->setTabToolTip(m_tabBar->count() - 1, path);
-    m_tabBar->setCurrentIndex(m_tabBar->count() - 1);
+    m_tabBar->setTabToolTip(tabIdx, path);
+
+    // Folder icon in tab (UX-B03)
+    QFileIconProvider iconProvider;
+    m_tabBar->setTabIcon(tabIdx, iconProvider.icon(QFileInfo(path)));
+
+    m_tabBar->setCurrentIndex(tabIdx);
     updateTabCloseButtons();
 }
 
@@ -358,6 +366,11 @@ void FolderPane::onBrowserPathChanged(const QString &path)
     const QString label = QDir(path).dirName();
     m_tabBar->setTabText(idx, label.isEmpty() ? path : label);
     m_tabBar->setTabToolTip(idx, path);
+
+    // Keep tab icon in sync with the new path (UX-B03)
+    QFileIconProvider iconProvider;
+    m_tabBar->setTabIcon(idx, iconProvider.icon(QFileInfo(path)));
+
     emit pathChanged(path);
 }
 

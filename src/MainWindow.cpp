@@ -307,21 +307,33 @@ void MainWindow::setupToolBar()
     m_toolBar->addSeparator();
 
     // Pane-count quick-switch buttons (1 / 2 / 3 / 4)
-    auto *actPane1 = m_toolBar->addAction(tr("1"), this, &MainWindow::onLayout1Pane);
-    actPane1->setToolTip(tr("1 Pane (Ctrl+F1)"));
-    actPane1->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F1));
+    // They form an exclusive checked group so the active count is always highlighted.
+    auto *paneGroup = new QActionGroup(this);
+    paneGroup->setExclusive(true);
 
-    auto *actPane2 = m_toolBar->addAction(tr("2"), this, &MainWindow::onLayout2PanesH);
-    actPane2->setToolTip(tr("2 Panes (Ctrl+F2)"));
-    actPane2->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F2));
+    m_actPane1 = m_toolBar->addAction(tr("1"), this, &MainWindow::onLayout1Pane);
+    m_actPane1->setToolTip(tr("1 Pane (Ctrl+F1)"));
+    m_actPane1->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F1));
+    m_actPane1->setCheckable(true);
+    paneGroup->addAction(m_actPane1);
 
-    auto *actPane3 = m_toolBar->addAction(tr("3"), this, &MainWindow::onLayout3Panes);
-    actPane3->setToolTip(tr("3 Panes (Ctrl+F3)"));
-    actPane3->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F3));
+    m_actPane2 = m_toolBar->addAction(tr("2"), this, &MainWindow::onLayout2PanesH);
+    m_actPane2->setToolTip(tr("2 Panes (Ctrl+F2)"));
+    m_actPane2->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F2));
+    m_actPane2->setCheckable(true);
+    paneGroup->addAction(m_actPane2);
 
-    auto *actPane4 = m_toolBar->addAction(tr("4"), this, &MainWindow::onLayout4Panes);
-    actPane4->setToolTip(tr("4 Panes (Ctrl+F4)"));
-    actPane4->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F4));
+    m_actPane3 = m_toolBar->addAction(tr("3"), this, &MainWindow::onLayout3Panes);
+    m_actPane3->setToolTip(tr("3 Panes (Ctrl+F3)"));
+    m_actPane3->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F3));
+    m_actPane3->setCheckable(true);
+    paneGroup->addAction(m_actPane3);
+
+    m_actPane4 = m_toolBar->addAction(tr("4"), this, &MainWindow::onLayout4Panes);
+    m_actPane4->setToolTip(tr("4 Panes (Ctrl+F4)"));
+    m_actPane4->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F4));
+    m_actPane4->setCheckable(true);
+    paneGroup->addAction(m_actPane4);
 
     m_toolBar->addSeparator();
     m_toolBar->addAction(
@@ -355,27 +367,52 @@ void MainWindow::setupDockWidgets()
     m_bookmarkDock->setObjectName(QStringLiteral("BookmarkDock"));
     m_bookmarkDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-    auto *bmList = new QListWidget(m_bookmarkDock);
-    m_bookmarkDock->setWidget(bmList);
+    m_bookmarkList = new QListWidget(m_bookmarkDock);
+    // Enable drag-to-reorder within the list (UX-B05)
+    m_bookmarkList->setDragEnabled(true);
+    m_bookmarkList->setAcceptDrops(true);
+    m_bookmarkList->setDropIndicatorShown(true);
+    m_bookmarkList->setDragDropMode(QAbstractItemView::InternalMove);
+    m_bookmarkList->setDefaultDropAction(Qt::MoveAction);
+
+    m_bookmarkDock->setWidget(m_bookmarkList);
     addDockWidget(Qt::LeftDockWidgetArea, m_bookmarkDock);
     m_bookmarkDock->hide();
 
-    auto rebuildList = [this, bmList]() {
-        bmList->clear();
+    auto rebuildList = [this]() {
+        // Guard: if a drag is in progress, the model will call rowsMoved which
+        // triggers BookmarkManager::move(). Rebuilding here would clear the
+        // QListWidget mid-drag. Only rebuild when NOT in a drag.
+        if (m_bookmarkList->state() == QAbstractItemView::DraggingState)
+            return;
+        m_bookmarkList->clear();
         for (const BookmarkEntry &e : m_bookmarkManager->bookmarks()) {
             auto *item = new QListWidgetItem(
                 QIcon::fromTheme(QStringLiteral("folder")), e.name);
             item->setData(Qt::UserRole, e.path);
-            bmList->addItem(item);
+            m_bookmarkList->addItem(item);
         }
     };
     rebuildList();
     connect(m_bookmarkManager, &BookmarkManager::bookmarksChanged,
             this, rebuildList);
-    connect(bmList, &QListWidget::itemActivated, this,
+    connect(m_bookmarkList, &QListWidget::itemActivated, this,
             [this](QListWidgetItem *item) {
         if (m_activePane)
             m_activePane->navigateTo(item->data(Qt::UserRole).toString());
+    });
+    // Propagate drag reorder → BookmarkManager (UX-B05)
+    connect(m_bookmarkList->model(), &QAbstractItemModel::rowsMoved, this,
+            [this](const QModelIndex &, int srcRow, int srcRowEnd,
+                   const QModelIndex &, int dstRow) {
+        Q_UNUSED(srcRowEnd)
+        // Qt's rowsMoved gives dstRow as the position *before* which the row
+        // is inserted in the new model state, but it still counts the source
+        // row as present.  When dragging downward (dstRow > srcRow) the source
+        // row has already been removed by the time the insert position is
+        // reported, so the effective final index is dstRow - 1.
+        const int target = (dstRow > srcRow) ? dstRow - 1 : dstRow;
+        m_bookmarkManager->move(srcRow, target);
     });
 
     // ── Preview panel ─────────────────────────────────────────────────────
@@ -462,6 +499,14 @@ void MainWindow::applyLayout(int paneCount)
         m_topSplitter->show();
         m_botSplitter->show();
         break;
+    }
+
+    // Sync the pane-count toolbar button checked state (UX-B08)
+    if (m_actPane1 && m_actPane2 && m_actPane3 && m_actPane4) {
+        m_actPane1->setChecked(paneCount == 1);
+        m_actPane2->setChecked(paneCount == 2);
+        m_actPane3->setChecked(paneCount == 3);
+        m_actPane4->setChecked(paneCount >= 4);
     }
 
     m_settingsManager->setPaneCount(paneCount);
