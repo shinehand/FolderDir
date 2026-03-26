@@ -46,6 +46,8 @@ public:
     void    setConfirmDelete(bool v);
     bool    verifyCopyChecksum() const;
     void    setVerifyCopyChecksum(bool v);
+    bool    useTrash() const;               ///< GAP-002: 삭제 시 휴지통으로 이동
+    void    setUseTrash(bool v);
     bool    showThumbnails() const;
     void    setShowThumbnails(bool v);
 

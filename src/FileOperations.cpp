@@ -7,6 +7,7 @@
 #include <QtCore/QThread>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QWaitCondition>
+#include <QtCore/QCryptographicHash>  // GAP-001: SHA-256 체크섬
 
 // ──────────────────────────────────────────────────────────────────────────────
 FileOperation::FileOperation(FileOperationKind kind,
@@ -139,7 +140,19 @@ bool FileOperation::copyFile(const QString &src, const QString &dst)
 {
     // Ensure destination directory exists
     QDir().mkpath(QFileInfo(dst).absolutePath());
-    return QFile::copy(src, dst);
+    if (!QFile::copy(src, dst))
+        return false;
+
+    // GAP-001: 복사 완료 후 SHA-256 체크섬으로 무결성 검증
+    if (m_verifyChecksum) {
+        if (fileHash(src) != fileHash(dst)) {
+            // 불일치 → 손상된 복사본 제거 후 실패 신호 발생
+            QFile::remove(dst);
+            emit checksumMismatch(src);
+            return false;
+        }
+    }
+    return true;
 }
 
 bool FileOperation::copyDirectory(const QString &src, const QString &dst)
@@ -167,6 +180,14 @@ bool FileOperation::copyDirectory(const QString &src, const QString &dst)
 
 bool FileOperation::deleteRecursive(const QString &path)
 {
+    // GAP-002: 설정에 따라 영구 삭제 대신 휴지통으로 이동
+    if (m_useTrash) {
+        QString trashPath;
+        if (QFile::moveToTrash(path, &trashPath))
+            return true;
+        // moveToTrash 미지원 환경에서는 영구 삭제로 폴백
+    }
+
     QFileInfo fi(path);
     if (fi.isDir()) {
         QDir dir(path);
@@ -178,6 +199,21 @@ bool FileOperation::deleteRecursive(const QString &path)
         return dir.rmdir(path);
     }
     return QFile::remove(path);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GAP-001: SHA-256 파일 해시 계산 (복사 무결성 검증용)
+QByteArray FileOperation::fileHash(const QString &path)
+{
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly))
+        return {};
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    // 청크 단위로 읽어 메모리 효율 보장
+    while (!f.atEnd()) {
+        hash.addData(f.read(65536));
+    }
+    return hash.result();
 }
 
 QString FileOperation::resolveDestPath(const QString &src) const

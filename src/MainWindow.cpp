@@ -3,6 +3,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QMenu>
+#include <QtGui/QActionGroup>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QDockWidget>
@@ -30,6 +31,7 @@
 #include "SettingsDialog.h"
 #include "FileSystemBrowser.h"
 #include "FolderTreePanel.h"
+#include "ColorRulesDialog.h"
 
 // ──────────────────────────────────────────────────────────────────────────────
 MainWindow::MainWindow(QWidget *parent)
@@ -55,6 +57,10 @@ MainWindow::MainWindow(QWidget *parent)
     if (m_settingsManager->restoreSession()) {
         restoreSession();
     }
+
+    // Ensure pane[0] is highlighted as active from the start (UX-B07)
+    if (m_panes[0])
+        onActivePaneChanged(m_panes[0]);
 
     resize(1280, 800);
     setWindowTitle(tr("FolderDir"));
@@ -87,6 +93,7 @@ void MainWindow::setupUi()
     // Create all four panes
     for (int i = 0; i < 4; ++i) {
         m_panes[i] = new FolderPane(m_bookmarkManager, this);
+        m_panes[i]->setSettingsManager(m_settingsManager);  // GAP-001/002
         connect(m_panes[i], &FolderPane::paneActivated,
                 this, &MainWindow::onActivePaneChanged);
         connect(m_panes[i], &FolderPane::selectionChanged,
@@ -149,6 +156,28 @@ void MainWindow::setupMenuBar()
     layoutMenu->addAction(tr("4 Panes"),
                           this, &MainWindow::onLayout4Panes);
 
+    // ── View mode sub-menu (Details / List / Icons / Thumbnails) ──────────
+    QMenu *viewModeMenu = viewMenu->addMenu(tr("View &Mode"));
+    {
+        auto *grp = new QActionGroup(this);
+        grp->setExclusive(true);
+
+        auto makeViewAct = [&](const QString &label, ViewMode mode) {
+            auto *act = viewModeMenu->addAction(label);
+            act->setCheckable(true);
+            grp->addAction(act);
+            connect(act, &QAction::triggered, this, [this, mode]() {
+                onSetViewMode(mode);
+            });
+            return act;
+        };
+        m_actViewDetails   = makeViewAct(tr("&Details"),    ViewMode::Details);
+        m_actViewList      = makeViewAct(tr("&List"),       ViewMode::List);
+        m_actViewIcons     = makeViewAct(tr("&Icons"),      ViewMode::Icons);
+        m_actViewThumbnails = makeViewAct(tr("&Thumbnails"), ViewMode::Thumbnails);
+        m_actViewDetails->setChecked(true); // default
+    }
+
     viewMenu->addSeparator();
 
     m_actHidden = viewMenu->addAction(tr("Show &Hidden Files"));
@@ -181,6 +210,7 @@ void MainWindow::setupMenuBar()
     toolsMenu->addAction(tr("&Search…"), this, &MainWindow::onOpenSearch,
                          QKeySequence(Qt::CTRL | Qt::Key_F));
     toolsMenu->addAction(tr("Open &Terminal"), this, &MainWindow::onOpenTerminal);
+    toolsMenu->addAction(tr("&Colour Rules…"), this, &MainWindow::onOpenColorRules);
     toolsMenu->addSeparator();
     toolsMenu->addAction(tr("&Settings…"), this, &MainWindow::onOpenSettings);
 
@@ -219,11 +249,13 @@ void MainWindow::setupMenuBar()
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     helpMenu->addAction(tr("&About FolderDir"), this, [this]() {
         QMessageBox::about(this, tr("About FolderDir"),
-            tr("<b>FolderDir</b> v1.0.2<br>"
-               "A multi-pane file manager inspired by Q-Dir.<br>"
-               "Phase 5 features: breadcrumb bar, folder tree sidebar,<br>"
-               "F-key shortcuts, properties dialog, and more.<br>"
-               "Built with C++17 and Qt."));
+            tr("<b>FolderDir</b> v1.1.0<br>"
+               "A multi-pane file manager inspired by Q-Dir.<br><br>"
+               "<b>Features:</b> Breadcrumb bar · Folder tree sidebar · "
+               "Color coding · Async folder sizes · Tab drag &amp; drop · "
+               "F-key shortcuts (F3–F10) · Properties dialog · "
+               "Session restore · Preview panel<br><br>"
+               "Built with C++17 and Qt 6."));
     });
 }
 
@@ -267,6 +299,44 @@ void MainWindow::setupToolBar()
     m_toolBar->addAction(
         QIcon::fromTheme(QStringLiteral("system-search")), tr("Search"),
         this, &MainWindow::onOpenSearch);
+
+    auto *actRefresh = m_toolBar->addAction(
+        QIcon::fromTheme(QStringLiteral("view-refresh")), tr("Refresh (Ctrl+R)"),
+        this, [this]() { if (m_activePane) m_activePane->refresh(); });
+    actRefresh->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_R));
+
+    m_toolBar->addSeparator();
+
+    // Pane-count quick-switch buttons (1 / 2 / 3 / 4)
+    // They form an exclusive checked group so the active count is always highlighted.
+    auto *paneGroup = new QActionGroup(this);
+    paneGroup->setExclusive(true);
+
+    m_actPane1 = m_toolBar->addAction(tr("1"), this, &MainWindow::onLayout1Pane);
+    m_actPane1->setToolTip(tr("1 Pane (Ctrl+F1)"));
+    m_actPane1->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F1));
+    m_actPane1->setCheckable(true);
+    paneGroup->addAction(m_actPane1);
+
+    m_actPane2 = m_toolBar->addAction(tr("2"), this, &MainWindow::onLayout2PanesH);
+    m_actPane2->setToolTip(tr("2 Panes (Ctrl+F2)"));
+    m_actPane2->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F2));
+    m_actPane2->setCheckable(true);
+    paneGroup->addAction(m_actPane2);
+
+    m_actPane3 = m_toolBar->addAction(tr("3"), this, &MainWindow::onLayout3Panes);
+    m_actPane3->setToolTip(tr("3 Panes (Ctrl+F3)"));
+    m_actPane3->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F3));
+    m_actPane3->setCheckable(true);
+    paneGroup->addAction(m_actPane3);
+
+    m_actPane4 = m_toolBar->addAction(tr("4"), this, &MainWindow::onLayout4Panes);
+    m_actPane4->setToolTip(tr("4 Panes (Ctrl+F4)"));
+    m_actPane4->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F4));
+    m_actPane4->setCheckable(true);
+    paneGroup->addAction(m_actPane4);
+
+    m_toolBar->addSeparator();
     m_toolBar->addAction(
         QIcon::fromTheme(QStringLiteral("preferences-system")), tr("Settings"),
         this, &MainWindow::onOpenSettings);
@@ -298,27 +368,57 @@ void MainWindow::setupDockWidgets()
     m_bookmarkDock->setObjectName(QStringLiteral("BookmarkDock"));
     m_bookmarkDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-    auto *bmList = new QListWidget(m_bookmarkDock);
-    m_bookmarkDock->setWidget(bmList);
+    m_bookmarkList = new QListWidget(m_bookmarkDock);
+    // Enable drag-to-reorder within the list (UX-B05)
+    m_bookmarkList->setDragEnabled(true);
+    m_bookmarkList->setAcceptDrops(true);
+    m_bookmarkList->setDropIndicatorShown(true);
+    m_bookmarkList->setDragDropMode(QAbstractItemView::InternalMove);
+    m_bookmarkList->setDefaultDropAction(Qt::MoveAction);
+
+    m_bookmarkDock->setWidget(m_bookmarkList);
     addDockWidget(Qt::LeftDockWidgetArea, m_bookmarkDock);
     m_bookmarkDock->hide();
 
-    auto rebuildList = [this, bmList]() {
-        bmList->clear();
+    auto *isDragging = new bool(false);
+    connect(m_bookmarkList, &QListWidget::itemPressed, this,
+            [isDragging]() { *isDragging = true; });
+
+    auto rebuildList = [this, isDragging]() {
+        // Guard: if a drag is in progress, the model will call rowsMoved which
+        // triggers BookmarkManager::move(). Rebuilding here would clear the
+        // QListWidget mid-drag. Only rebuild when NOT in a drag.
+        if (*isDragging)
+            return;
+        m_bookmarkList->clear();
         for (const BookmarkEntry &e : m_bookmarkManager->bookmarks()) {
             auto *item = new QListWidgetItem(
                 QIcon::fromTheme(QStringLiteral("folder")), e.name);
             item->setData(Qt::UserRole, e.path);
-            bmList->addItem(item);
+            m_bookmarkList->addItem(item);
         }
     };
     rebuildList();
     connect(m_bookmarkManager, &BookmarkManager::bookmarksChanged,
             this, rebuildList);
-    connect(bmList, &QListWidget::itemActivated, this,
+    connect(m_bookmarkList, &QListWidget::itemActivated, this,
             [this](QListWidgetItem *item) {
         if (m_activePane)
             m_activePane->navigateTo(item->data(Qt::UserRole).toString());
+    });
+    // Propagate drag reorder → BookmarkManager (UX-B05)
+    connect(m_bookmarkList->model(), &QAbstractItemModel::rowsMoved, this,
+            [this, isDragging](const QModelIndex &, int srcRow, int srcRowEnd,
+                   const QModelIndex &, int dstRow) {
+        Q_UNUSED(srcRowEnd)
+        // Qt's rowsMoved gives dstRow as the position *before* which the row
+        // is inserted in the new model state, but it still counts the source
+        // row as present.  When dragging downward (dstRow > srcRow) the source
+        // row has already been removed by the time the insert position is
+        // reported, so the effective final index is dstRow - 1.
+        const int target = (dstRow > srcRow) ? dstRow - 1 : dstRow;
+        m_bookmarkManager->move(srcRow, target);
+        *isDragging = false;  // drag complete
     });
 
     // ── Preview panel ─────────────────────────────────────────────────────
@@ -361,11 +461,12 @@ void MainWindow::setupConnections()
                 m_previewPanel->clear();
         });
 
-        // Sync folder tree when active pane navigates
+        // Sync folder tree when active pane navigates, and refresh status bar item count
         connect(pane, &FolderPane::pathChanged, this, [this, pane](const QString &path) {
             if (pane != m_activePane) return;
             if (m_treeDock->isVisible())
                 m_treePanel->setActivePath(path);
+            updateStatusBar();
         });
     }
 }
@@ -404,6 +505,14 @@ void MainWindow::applyLayout(int paneCount)
         m_topSplitter->show();
         m_botSplitter->show();
         break;
+    }
+
+    // Sync the pane-count toolbar button checked state (UX-B08)
+    if (m_actPane1 && m_actPane2 && m_actPane3 && m_actPane4) {
+        m_actPane1->setChecked(paneCount == 1);
+        m_actPane2->setChecked(paneCount == 2);
+        m_actPane3->setChecked(paneCount == 3);
+        m_actPane4->setChecked(paneCount >= 4);
     }
 
     m_settingsManager->setPaneCount(paneCount);
@@ -589,8 +698,19 @@ void MainWindow::updateStatusBar()
     m_statusSelection->setText(
         tr("%n item(s) selected", "", sel.size()));
 
+    // Item count for current directory
+    const QString curPath = m_activePane->currentPath();
+    const QDir dir(curPath);
+    if (dir.exists()) {
+        const int itemCount = static_cast<int>(
+            dir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot).size());
+        m_statusItems->setText(tr("%n item(s)", "", itemCount));
+    } else {
+        m_statusItems->clear();
+    }
+
     // Disk free
-    const QStorageInfo si(m_activePane->currentPath());
+    const QStorageInfo si(curPath);
     if (si.isValid()) {
         const double freeGb = si.bytesFree() / 1.0e9;
         m_statusDisk->setText(tr("Free: %1 GB").arg(freeGb, 0, 'f', 1));
@@ -658,6 +778,14 @@ void MainWindow::onLayout2PanesV()  { applyLayout(2); }
 void MainWindow::onLayout3Panes()   { applyLayout(3); }
 void MainWindow::onLayout4Panes()   { applyLayout(4); }
 
+void MainWindow::onSetViewMode(ViewMode mode)
+{
+    m_currentViewMode = mode;
+    // 활성 패널에만 뷰 모드 적용 (UX-B01: 패널별 독립 뷰 모드)
+    if (m_activePane)
+        m_activePane->setViewMode(mode);
+}
+
 void MainWindow::onToggleHidden()
 {
     const bool show = m_actHidden->isChecked();
@@ -705,6 +833,12 @@ void MainWindow::onOpenSettings()
     if (dlg.exec() == QDialog::Accepted) {
         m_settingsManager->applyTheme();
     }
+}
+
+void MainWindow::onOpenColorRules()
+{
+    ColorRulesDialog dlg(this);
+    dlg.exec();
 }
 
 void MainWindow::onOpenTerminal()

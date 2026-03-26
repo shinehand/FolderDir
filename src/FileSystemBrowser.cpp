@@ -27,6 +27,13 @@
 #include "FileSystemModel.h"
 #include "FileOperations.h"
 #include "FileOperationDialog.h"
+#include "SettingsManager.h"
+
+// Details 뷰 컬럼 인덱스 (QFileSystemModel 순서 고정) — UX-B02
+static constexpr int COL_NAME = 0;
+static constexpr int COL_SIZE = 1;
+static constexpr int COL_TYPE = 2;
+static constexpr int COL_DATE = 3;
 
 // ──────────────────────────────────────────────────────────────────────────────
 FileSystemBrowser::FileSystemBrowser(const QString &path, QWidget *parent)
@@ -63,14 +70,21 @@ void FileSystemBrowser::setupUi()
     m_detailsView->setDragDropMode(QAbstractItemView::DragDrop);
     m_detailsView->setDefaultDropAction(Qt::CopyAction);
     m_detailsView->setContextMenuPolicy(Qt::CustomContextMenu);
+    // Use SelectedClicked so a second click on an already-selected item starts
+    // inline rename (Windows Explorer behaviour).  DoubleClicked is intentionally
+    // excluded because double-click must navigate into folders via the activated
+    // signal without conflicting with the edit delegate.
+    m_detailsView->setEditTriggers(QAbstractItemView::SelectedClicked |
+                                   QAbstractItemView::EditKeyPressed);
     m_detailsView->header()->setSectionsMovable(true);
     m_detailsView->header()->setStretchLastSection(false);
-    m_detailsView->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-    // Hide columns 1-3 (we still have them available but not shown by default)
-    // size | type | date
-    m_detailsView->setColumnWidth(1, 80);
-    m_detailsView->setColumnWidth(2, 100);
-    m_detailsView->setColumnWidth(3, 140);
+    m_detailsView->header()->setSectionResizeMode(COL_NAME, QHeaderView::Stretch);
+    // 헤더 우클릭 컨텍스트 메뉴 활성화 (UX-B02)
+    m_detailsView->header()->setContextMenuPolicy(Qt::CustomContextMenu);
+    // Size/Type/Date 컬럼 기본 너비
+    m_detailsView->setColumnWidth(COL_SIZE, 80);
+    m_detailsView->setColumnWidth(COL_TYPE, 100);
+    m_detailsView->setColumnWidth(COL_DATE, 140);
 
     connect(m_detailsView, &QTreeView::activated,
             this, &FileSystemBrowser::onItemActivated);
@@ -81,6 +95,9 @@ void FileSystemBrowser::setupUi()
             this, [this]() { emit selectionChanged(); });
     connect(m_detailsView->header(), &QHeaderView::sortIndicatorChanged,
             this, &FileSystemBrowser::onSortIndicatorChanged);
+    // 헤더 우클릭 → 컬럼 표시/숨김 메뉴 (UX-B02)
+    connect(m_detailsView->header(), &QHeaderView::customContextMenuRequested,
+            this, &FileSystemBrowser::onHeaderContextMenu);
 
     // ── List view ────────────────────────────────────────────────────────
     m_listView = new QListView(this);
@@ -91,6 +108,10 @@ void FileSystemBrowser::setupUi()
     m_listView->setDropIndicatorShown(true);
     m_listView->setDragDropMode(QAbstractItemView::DragDrop);
     m_listView->setContextMenuPolicy(Qt::CustomContextMenu);
+    // Mirror the details-view edit-trigger policy: SelectedClicked for rename,
+    // no DoubleClicked so that double-click navigation via activated is clean.
+    m_listView->setEditTriggers(QAbstractItemView::SelectedClicked |
+                                QAbstractItemView::EditKeyPressed);
     m_listView->setViewMode(QListView::ListMode);
     m_listView->setWrapping(true);
     m_listView->setResizeMode(QListView::Adjust);
@@ -310,6 +331,9 @@ void FileSystemBrowser::pasteHere()
     auto *op = new FileOperation(
         cut ? FileOperationKind::Move : FileOperationKind::Copy,
         srcs, m_currentPath);
+    // GAP-001: 복사 시 체크섬 검증 연동
+    if (!cut && m_settingsMgr && m_settingsMgr->verifyCopyChecksum())
+        op->setVerifyChecksum(true);
 
     auto *dlg = new FileOperationDialog(op, this);
     dlg->setAttribute(Qt::WA_DeleteOnClose);
@@ -322,9 +346,15 @@ void FileSystemBrowser::deleteSelected(bool permanent)
     const QStringList paths = selectedPaths();
     if (paths.isEmpty()) return;
 
-    if (!confirmDelete(paths.size())) return;
+    // Settings-aware confirmation (skip if confirmDelete is disabled)
+    if (!m_settingsMgr || m_settingsMgr->confirmDelete()) {
+        if (!confirmDelete(paths.size())) return;
+    }
 
     auto *op = new FileOperation(FileOperationKind::Delete, paths, QString());
+    // GAP-002: Shift+Delete (permanent=true) は常に永久削除; それ以外は設定に従う
+    if (!permanent && m_settingsMgr && m_settingsMgr->useTrash())
+        op->setUseTrash(true);
     auto *dlg = new FileOperationDialog(op, this);
     dlg->setAttribute(Qt::WA_DeleteOnClose);
     op->start();
@@ -536,6 +566,9 @@ void FileSystemBrowser::copyToPath(const QString &destPath)
     }
 
     auto *op = new FileOperation(FileOperationKind::Copy, srcs, cleanDest);
+    // GAP-001: 체크섬 검증 연동
+    if (m_settingsMgr && m_settingsMgr->verifyCopyChecksum())
+        op->setVerifyChecksum(true);
     auto *dlg = new FileOperationDialog(op, this);
     dlg->setAttribute(Qt::WA_DeleteOnClose);
     op->start();
@@ -661,6 +694,35 @@ void FileSystemBrowser::onSortIndicatorChanged(int column, Qt::SortOrder order)
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// UX-B02: 헤더 우클릭 → 컬럼 표시/숨김 컨텍스트 메뉴
+void FileSystemBrowser::onHeaderContextMenu(const QPoint &pos)
+{
+    QHeaderView *header = m_detailsView->header();
+
+    // COL_NAME(0)은 항상 표시; COL_SIZE/TYPE/DATE 만 토글 가능 (UX-B02)
+    static const struct { int col; const char *label; } kColumns[] = {
+        { COL_SIZE, QT_TR_NOOP("Size")          },
+        { COL_TYPE, QT_TR_NOOP("Type")          },
+        { COL_DATE, QT_TR_NOOP("Date Modified") },
+    };
+
+    QMenu menu(this);
+    menu.setTitle(tr("Columns"));
+
+    for (const auto &c : kColumns) {
+        auto *act = menu.addAction(tr(c.label));
+        act->setCheckable(true);
+        act->setChecked(!header->isSectionHidden(c.col));
+        const int col = c.col;
+        connect(act, &QAction::triggered, this, [this, col](bool checked) {
+            m_detailsView->header()->setSectionHidden(col, !checked);
+        });
+    }
+
+    menu.exec(header->mapToGlobal(pos));
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 void FileSystemBrowser::keyPressEvent(QKeyEvent *event)
 {
     const bool altMod   = (event->modifiers() == Qt::AltModifier);
@@ -714,11 +776,10 @@ void FileSystemBrowser::keyPressEvent(QKeyEvent *event)
         event->accept();
         return;
     case Qt::Key_F5:
-        // F5 without modifiers = refresh (Ctrl+R is also supported)
-        // F5/F6 for copy/move are handled in MainWindow to use pane context
-        refresh();
-        event->accept();
-        return;
+        // BUG-003 fix: F5 is handled by MainWindow (Copy To dialog).
+        // Do NOT consume F5 here so it propagates to MainWindow::keyPressEvent.
+        // Use Ctrl+R for refresh instead.
+        break;
     case Qt::Key_R:
         if (event->modifiers() == Qt::ControlModifier) {
             refresh();

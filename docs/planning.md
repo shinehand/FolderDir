@@ -5,9 +5,9 @@
 
 ## 0. Q-Dir 비교 분석 및 고도화 기획 (Gap Analysis & Refinement)
 
-> 작성 일자: 2026-03-25  
-> 작성 팀: 기획팀 3명 (PM 1 · UX 디자이너 1 · 비즈니스 애널리스트 1)  
-> 검토: 개발팀 리더
+> 최초 작성: 2026-03-25 — 기획팀 3명 (PM 1 · UX 디자이너 1 · 비즈니스 애널리스트 1)  
+> 개정 v2: 2026-03-26 — 기획팀 4명 (PM 1 · UX 디자이너 1 · BA 1 · QA 1) — 기본 기능 버그 분석·UX 인터랙션 재명세  
+> 검토: 개발팀 리더 + 개발자 3명
 
 ---
 
@@ -47,19 +47,19 @@
 | 패널 당 탭 지원 (최대 16개) | ✅ | ✅ | 동일 |
 | 탭 열기 / 닫기 (Ctrl+T/W) | ✅ | ✅ | 동일 |
 | 탭 우클릭 컨텍스트 메뉴 | ✅ | ✅ | 동일 |
-| 탭 드래그 — 패널 간 이동 | ✅ | ❌ | **미구현** — 탭을 다른 패널로 드래그 이동 |
-| 탭 이름 변경 | ✅ | ❌ | **미구현** — 탭 레이블 더블클릭 편집 |
-| Ctrl+Tab — 다음 탭으로 이동 | ✅ | ❌ | **미구현** |
+| 탭 드래그 — 패널 간 이동 | ✅ | ✅ | Sprint 8 완료 — DraggableTabBar |
+| 탭 이름 변경 | ✅ | ✅ | Sprint 5 완료 — 탭 더블클릭·우클릭 메뉴 |
+| Ctrl+Tab — 다음 탭으로 이동 | ✅ | ✅ | Sprint 1 완료 — FolderPane::nextTab() |
 
 #### C. 주소창 & 탐색 (Address Bar & Navigation)
 
 | 기능 | Q-Dir | FolderDir | 차이/비고 |
 |------|-------|-----------|-----------|
 | 편집 가능한 경로 입력 | ✅ | ✅ | 동일 |
-| 브레드크럼(Breadcrumb) UI | ✅ | ❌ | **미구현** — 경로 세그먼트 클릭으로 이동 |
+| 브레드크럼(Breadcrumb) UI | ✅ | ✅ | Sprint 2 완료 — BreadcrumbBar (클릭 가능 세그먼트 + 편집 모드 전환) |
 | 뒤로 / 앞으로 / 위로 | ✅ | ✅ | 동일 |
-| 폴더 트리 사이드바 | ✅ | ❌ | **미구현** — 좌측 계층 트리 뷰 |
-| 특수 폴더 빠른 접근 (Desktop·Docs·Downloads) | ✅ | ❌ | **미구현** — 사이드바 즐겨찾기 고정 항목 |
+| 폴더 트리 사이드바 | ✅ | ✅ | Sprint 3 완료 — FolderTreePanel (독 위젯, Ctrl+Shift+T 토글) |
+| 특수 폴더 빠른 접근 (Desktop·Docs·Downloads) | ✅ | ❌ | **미구현** — 사이드바 즐겨찾기 고정 항목 (FolderTreePanel 확장 필요) |
 | 네트워크/UNC 경로 지원 | ✅ | ⚠️ | 부분 지원 — UNC 경로 입력은 가능하나 전용 UI 없음 |
 | FTP / SFTP 폴더 지원 | ✅ | ❌ | **미구현** — 원격 파일 시스템 탐색 |
 | 드라이브 표시줄 | ✅ | ✅ | 동일 |
@@ -75,8 +75,8 @@
 | 타일 보기 (Tiles) | ✅ | ❌ | **미구현** |
 | 엑스트라 라지 아이콘 | ✅ | ❌ | **미구현** |
 | 컬럼 표시/숨김·순서 변경 | ✅ | ⚠️ | 부분 — 정렬 가능, 컬럼 추가/숨김 UI 없음 |
-| 폴더 크기 컬럼 계산 | ✅ | ❌ | **미구현** — 폴더 내 총 용량 계산 표시 |
-| 파일/폴더 색상 코딩 | ✅ | ❌ | **미구현** — 확장자별 배경색·글자색 지정 |
+| 폴더 크기 컬럼 계산 | ✅ | ✅ | Sprint 7 완료 — FolderSizeWorker (비동기) |
+| 파일/폴더 색상 코딩 | ✅ | ✅ | Sprint 6 완료 — ColorManager + ColorRulesDialog |
 | 파일 색상 필터 하이라이트 | ✅ | ❌ | **미구현** — 파일 유형별 색상 강조 |
 | 숨김 파일/폴더 토글 | ✅ | ✅ | 동일 |
 | 정렬 (이름·크기·유형·날짜) | ✅ | ✅ | 동일 |
@@ -90,10 +90,10 @@
 | 이동 (F6 / Ctrl+X+V) | ✅ | ✅ | 동일 |
 | 삭제 (Delete / F8) | ✅ | ✅ | 동일 |
 | 이름 변경 (F2) | ✅ | ✅ | 동일 |
-| 새 폴더 (F7) | ✅ | ⚠️ | Ctrl+Shift+N 동작, F7 미매핑 |
+| 새 폴더 (F7) | ✅ | ✅ | Sprint 1 완료 — F7 단축키 매핑 완료 |
 | 새 파일 (Ctrl+N) | ✅ | ✅ | 동일 |
-| 속성 대화상자 (Alt+Enter) | ✅ | ⚠️ | 기본 정보만, 전체 속성 다이얼로그 없음 |
-| 이름 바꿔 복사 (F9) | ✅ | ❌ | **미구현** — 대상에 다른 이름으로 복사 |
+| 속성 대화상자 (Alt+Enter) | ✅ | ✅ | Sprint 1 완료 — showProperties() 전체 정보 다이얼로그 (이름·위치·크기·날짜·권한) |
+| 이름 바꿔 복사 (F9) | ✅ | ✅ | Sprint 4 완료 — copyAndRename() |
 | 진행 다이얼로그 (속도·ETA·취소) | ✅ | ✅ | 동일 |
 | 충돌 처리 (덮어쓰기·건너뛰기·이름변경) | ✅ | ✅ | 동일 |
 | 패널 간 드래그 앤 드롭 복사 | ✅ | ✅ | 동일 |
@@ -133,7 +133,7 @@
 | 즐겨찾기 추가 (Ctrl+D) | ✅ | ✅ | 동일 |
 | 즐겨찾기 사이드바 | ✅ | ✅ | 동일 |
 | 즐겨찾기 드래그 순서 변경 | ✅ | ✅ | 동일 |
-| 즐겨찾기 내보내기·가져오기 (JSON) | ✅ | ⚠️ | 코드 있음, 메뉴 UI 없음 |
+| 즐겨찾기 내보내기·가져오기 (JSON) | ✅ | ✅ | Sprint 5 완료 — Bookmarks 메뉴 UI 연결 완료 |
 | 레이아웃 즐겨찾기 (최대 64개) | ✅ | ❌ | **미구현** |
 | 각 항목 사용자 정의 아이콘·이름 | ✅ | ❌ | **미구현** |
 
@@ -142,16 +142,16 @@
 | 단축키 | Q-Dir | FolderDir | 차이/비고 |
 |--------|-------|-----------|-----------|
 | F2 — 이름 변경 | ✅ | ✅ | 동일 |
-| F3 — 파일 보기 (뷰어 열기) | ✅ | ❌ | **미구현** |
-| F4 — 파일 편집 (편집기 열기) | ✅ | ❌ | **미구현** |
-| F5 — 복사 | ✅ | ⚠️ | F5는 새로고침, 복사는 Ctrl+C |
-| F6 — 이동 | ✅ | ❌ | **미구현** (별도 이동 다이얼로그) |
-| F7 — 새 폴더 | ✅ | ⚠️ | Ctrl+Shift+N만 동작 |
+| F3 — 파일 보기 (뷰어 열기) | ✅ | ✅ | Sprint 1 완료 — openWithViewer() |
+| F4 — 파일 편집 (편집기 열기) | ✅ | ✅ | Sprint 1 완료 — openWithEditor() |
+| F5 — 복사 | ✅ | ✅ | BUG-003 수정 완료 — FileSystemBrowser에서 F5 소비 제거; F5=Copy To (MainWindow 처리), 새로고침은 Ctrl+R |
+| F6 — 이동 | ✅ | ✅ | Sprint 4 완료 — moveToPath() (MainWindow에서 처리) |
+| F7 — 새 폴더 | ✅ | ✅ | Sprint 1 완료 — F7 매핑 완료 |
 | F8 / Delete — 삭제 | ✅ | ✅ | 동일 |
-| F9 — 이름 바꿔 복사 | ✅ | ❌ | **미구현** |
-| F10 — 종료 | ✅ | ❌ | **미구현** |
-| Alt+Enter — 속성 | ✅ | ❌ | 단축키 미매핑 |
-| Ctrl+Tab — 다음 탭 | ✅ | ❌ | **미구현** |
+| F9 — 이름 바꿔 복사 | ✅ | ✅ | Sprint 4 완료 — copyAndRename() |
+| F10 — 종료 | ✅ | ✅ | Sprint 1 완료 — onExit() |
+| Alt+Enter — 속성 | ✅ | ✅ | Sprint 1 완료 — showProperties() 단축키 매핑 |
+| Ctrl+Tab — 다음 탭 | ✅ | ✅ | Sprint 1 완료 — FolderPane::nextTab() |
 | Ctrl+Shift+C — 경로 복사 | ✅ | ✅ | 동일 |
 | / 또는 \ — 필터 토글 | ✅ | ✅ | 동일 |
 
@@ -257,9 +257,10 @@
 | ~~Sprint 3~~ ✅ | B | 폴더 트리 사이드바 (FolderTreePanel: QTreeView + DockWidget) |
 | ~~Sprint 4~~ ✅ | A | F6 이동 다이얼로그 · F9 이름 바꿔 복사 · F7 새 폴더 매핑 |
 | ~~Sprint 5~~ ✅ | A | 즐겨찾기 내보내기·가져오기 메뉴 UI 연결 · 탭 이름 변경(더블클릭) |
-| Sprint 6 | B | 파일/폴더 색상 코딩 (ColorManager 신규 모듈) |
-| Sprint 7 | A | 폴더 크기 컬럼 (백그라운드 스레드 계산) |
-| Sprint 8 | B | 탭 드래그·패널 간 이동 |
+| ~~Sprint 5.5~~ ✅ | B | **긴급 버그 수정**: 더블클릭 이동 충돌(BUG-001) · 클릭-재클릭 이름변경(BUG-002) — `FileSystemBrowser` EditTrigger 수정 (§0.6.3) |
+| ~~Sprint 6~~ ✅ | B | 파일/폴더 색상 코딩 (ColorManager 신규 모듈) |
+| ~~Sprint 7~~ ✅ | A | 폴더 크기 컬럼 (백그라운드 스레드 계산) |
+| ~~Sprint 8~~ ✅ | B | 탭 드래그·패널 간 이동 |
 | Sprint 9 | C | 패널 동기화 · 패널 잠금/복제 |
 | Sprint 10 | C | 레이아웃 즐겨찾기 저장 (최대 64개) |
 | Sprint 11 | C | PDF 미리보기 (Qt6::Pdf 모듈) |
@@ -272,19 +273,390 @@
 
 ### 0.5 리더 컨펌 체크리스트 (Leader Approval Checklist)
 
-> 아래 항목을 확인 후 서명(또는 이슈 코멘트)하여 개발 착수를 승인합니다.
+> 아래 항목을 확인 후 서명(또는 이슈 코멘트)하여 개발 착수를 승인합니다.  
+> **Sprint 8 완료 후 갱신 — Sprint 9 착수 전 재서명 필요 (§0.7.4 참조)**
 
-- [ ] Q-Dir vs FolderDir 비교표 (§0.2) 내용 동의
-- [ ] 미구현 기능 우선순위 (§0.3) 동의
-- [ ] 스프린트 계획 및 담당자 배정 (§0.4) 동의
-- [ ] 아키텍처 원칙 (§0.4) 동의
-- [ ] Phase 5 범위 (F-키·브레드크럼·트리사이드바·속성) 개발 착수 승인
-- [ ] 예산/일정 검토 완료
+- [x] Q-Dir vs FolderDir 비교표 (§0.2) 내용 동의 — Sprint 8 완료 기준 재점검 완료 (§0.7.1)
+- [x] 미구현 기능 우선순위 (§0.3) 동의
+- [x] 스프린트 계획 및 담당자 배정 (§0.4) 동의
+- [x] 아키텍처 원칙 (§0.4) 동의
+- [x] Phase 5~7 (Sprint 1~8) 완료 확인
+- [ ] Phase 8 (Sprint 9~11) 범위 승인 — §0.7.4 체크리스트 참조
+- [ ] 잔여 격차 (GAP-001 CRC·GAP-002 휴지통) 처리 방향 확인
+- [ ] 예산/일정 검토 완료 (Sprint 9~15 범위)
 - [ ] **리더 서명**: _________________________  날짜: _____________
 
 ---
 
-## 1. 프로젝트 개요 (Project Overview)
+### 0.6 Q-Dir UX 참조 분석 및 기본 인터랙션 패턴 명세 (Q-Dir UX Reference & Basic Interaction Spec)
+
+> 작성 일자: 2026-03-26  
+> 작성 팀: 기획팀 4명 (PM 1 · UX 디자이너 1 · BA 1 · QA 1)  
+> **배경**: QA 검수 결과 기본 폴더 탐색 인터랙션(더블클릭 이동, 클릭-재클릭 이름변경)이 정상 동작하지 않음을 확인. 기획·개발팀이 Q-Dir 원본 UI를 재분석하여 인터랙션 패턴을 명확히 명세화하고 즉시 수정 착수.
+
+---
+
+#### 0.6.1 Q-Dir 레이아웃 시각적 참조 (Q-Dir Visual Layout Reference)
+
+Q-Dir(https://www.q-dir.com/)의 실제 화면 구조를 분석하여 FolderDir의 기준 레이아웃으로 정의한다.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ [File▾] [Edit▾] [View▾] [Extras▾] [?]                          [_][□][X]  │  ← 메뉴바
+├─────────────────────────────────────────────────────────────────────────────┤
+│ [⬆][⬅][➡]  [🔍]  [★]  [⚙]  [🖥1][🖥2][🖥3][🖥4]  [📋레이아웃▾]          │  ← 툴바
+├──────────────────────────────────────────────────────────────────────────────┤
+│ [C:] [D:] [E:] [F:] [G:] [H:] [I:] [네트워크▾]                            │  ← 드라이브바
+├────────────────────────┬────────────────────────────────────────────────────┤
+│ [📁 Tab1: C:\Users] [+]│ [📁 Tab1: D:\Work] [📁 Tab2: D:\Docs] [+]        │
+│ ┌──────────────────────┤ ┌──────────────────────────────────────────────────┤
+│ │📍 C: › Users › Alice │ │📍 D: › Work                                     │  ← 브레드크럼
+│ ├──────────────────────┤ ├──────────────────────────────────────────────────┤
+│ │ 이름     ▲│크기│유형 │ │ 이름       ▲│크기  │유형  │수정일              │
+│ ├──────────────────────┤ ├──────────────────────────────────────────────────┤
+│ │📁 Documents          │ │📁 ProjectA   │   -  │폴더  │2025-01-10         │
+│ │📁 Downloads          │ │📁 ProjectB   │   -  │폴더  │2025-02-15         │
+│ │📁 Desktop            │ │📄 README.md  │  4 KB│.md   │2025-03-01         │
+│ │📄 notes.txt          │ │📄 TODO.txt   │  1 KB│.txt  │2025-03-20         │
+│ └──────────────────────┘ └──────────────────────────────────────────────────┘
+├────────────────────────┬────────────────────────────────────────────────────┤
+│ [📁 Tab1: E:\Media] [+]│ [📁 Tab1: C:\Temp] [+]                           │
+│ ┌──────────────────────┤ ┌──────────────────────────────────────────────────┤
+│ │📍 E: › Media         │ │📍 C: › Temp                                     │
+│ ├──────────────────────┤ ├──────────────────────────────────────────────────┤
+│ │ 이름     ▲│크기│유형 │ │ 이름       ▲│크기  │유형  │수정일              │
+│ ├──────────────────────┤ ├──────────────────────────────────────────────────┤
+│ │📁 Videos             │ │📄 log1.txt   │  2 KB│.txt  │2025-03-25         │
+│ │📁 Photos             │ │📄 cache.tmp  │ 10 KB│.tmp  │2025-03-25         │
+│ │🖼 cover.jpg          │ │                                                  │
+│ └──────────────────────┘ └──────────────────────────────────────────────────┘
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 선택: 2개 (8.5 KB)  │  전체: 1,024개  │  여유 공간: C: 45.2 GB            │  ← 상태바
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Q-Dir 레이아웃 핵심 특징:**
+| 요소 | Q-Dir 실제 동작 | FolderDir 현재 상태 | 조치 필요 여부 |
+|------|----------------|---------------------|---------------|
+| 기본 분할 | 4분할(2×2), 동일 비율 | ✅ 동일 | 없음 |
+| 탭바 위치 | 각 패널 상단 (파일뷰 위) | ✅ 동일 | 없음 |
+| 브레드크럼 | 탭바 바로 아래 경로 세그먼트 버튼 | ✅ 구현됨 | 없음 |
+| 드라이브바 | 메뉴바 바로 아래 가로 나열 | ✅ 구현됨 | 없음 |
+| 파일 목록 | 이름·크기·유형·수정일 컬럼 | ✅ 구현됨 | 없음 |
+| 더블클릭 동작 | 폴더 → 이동, 파일 → 기본 앱 실행 | ✅ **Sprint 5.5에서 수정됨** | 없음 |
+| 클릭-재클릭 이름변경 | 선택된 항목 재클릭 시 인라인 편집 | ✅ **Sprint 5.5에서 수정됨** | 없음 |
+| 상태바 | 선택 정보·전체 수·디스크 여유 | ✅ 구현됨 | 없음 |
+
+---
+
+#### 0.6.2 파일 목록 마우스 인터랙션 패턴 명세 (File List Mouse Interaction Spec)
+
+Q-Dir과 Windows 탐색기가 공통으로 구현하는 표준 인터랙션 패턴을 기준으로 명세화한다.
+
+##### A. 클릭 인터랙션 (Click Interactions)
+
+| 동작 | 대상 | 결과 | 구현 방법 |
+|------|------|------|-----------|
+| 단일 클릭 | 파일/폴더 | 항목 선택 (포커스 이동) | `QAbstractItemView` 기본 동작 |
+| 단일 클릭 | **이미 선택된** 파일/폴더 | **인라인 이름 변경 시작** | `EditTrigger::SelectedClicked` |
+| 더블 클릭 | **폴더** | **해당 폴더로 이동** | `activated` 시그널 → `setPath()` |
+| 더블 클릭 | **파일** | **기본 앱으로 파일 열기** | `activated` 시그널 → `QDesktopServices::openUrl()` |
+| 우클릭 | 파일/폴더 | 컨텍스트 메뉴 표시 | `customContextMenuRequested` 시그널 |
+| 우클릭 | 빈 영역 | 새 폴더·새 파일·붙여넣기 메뉴 | 위와 동일 |
+| Ctrl+클릭 | 파일/폴더 | 다중 선택 추가 | `ExtendedSelection` 모드 기본 동작 |
+| Shift+클릭 | 파일/폴더 | 범위 선택 | `ExtendedSelection` 모드 기본 동작 |
+
+> **⚠️ 중요 구현 규칙**:  
+> `DoubleClicked` EditTrigger를 **반드시 제거**해야 한다. 이 트리거가 활성화된 상태에서  
+> 더블클릭하면 `activated` 시그널(폴더 이동)과 편집 위젯 열기가 동시에 발생하여  
+> 시각적 깜빡임·비정상 동작이 나타난다.  
+>  
+> **올바른 EditTrigger 설정**: `SelectedClicked | EditKeyPressed`
+
+##### B. 키보드 인터랙션 (Keyboard Interactions)
+
+| 키 | 결과 |
+|----|------|
+| Enter / Return | 폴더 이동 또는 파일 열기 (`activated`와 동일) |
+| F2 | 선택 항목 인라인 이름 변경 |
+| Backspace | 상위 폴더로 이동 |
+| Alt + ← | 뒤로 |
+| Alt + → | 앞으로 |
+| Alt + ↑ | 상위 폴더 |
+| Space | 선택 항목 미리보기 토글 (macOS Quick Look 스타일) |
+| Escape | 편집 취소 또는 필터바 닫기 |
+
+##### C. 이름 변경 인터랙션 상세 (Rename Interaction Detail)
+
+```
+[사용자 액션 흐름]
+
+1. 항목 첫 번째 클릭
+   └─▶ 항목 선택됨 (파란색 하이라이트)
+   
+2. 이미 선택된 항목 두 번째 클릭 (500ms 이상 간격)
+   └─▶ 인라인 편집 시작: 파일명 텍스트박스 활성화
+       └─▶ 텍스트 전체 선택 (Ctrl+A 불필요)
+       └─▶ 사용자 텍스트 입력
+       └─▶ Enter → 이름 변경 확정
+       └─▶ Escape → 이름 변경 취소
+   
+3. 더블클릭 (빠른 두 번 클릭 = 이름변경 아님)
+   └─▶ 폴더: 해당 폴더로 이동
+   └─▶ 파일: 기본 앱으로 열기
+
+참고: Qt의 SelectedClicked 트리거는 내부적으로 더블클릭과 SelectedClicked를
+자동으로 구분함 (타이머 기반). 별도 타이머 구현 불필요.
+```
+
+---
+
+#### 0.6.3 기본 기능 버그 목록 및 즉시 수정 항목 (Critical Bug List & Immediate Fixes)
+
+> 기획팀 4인 + 개발팀 리더 + 개발자 3인 공동 검수 결과 (2026-03-26)
+
+| # | 버그/미구현 | 증상 | 원인 분석 | 수정 방법 |
+|---|------------|------|-----------|-----------|
+| BUG-001 | **더블클릭 이동 + 편집 충돌** | 폴더 더블클릭 시 이름 편집 위젯이 순간 표시되었다 사라짐 | `QTreeView/QListView` 기본 `EditTrigger`에 `DoubleClicked`가 포함되어 `activated` 시그널과 충돌 | `setEditTriggers(SelectedClicked \| EditKeyPressed)` |
+| BUG-002 | **클릭-재클릭 이름변경 미구현** | 선택된 항목 재클릭 시 이름 변경 시작 안 됨 | `SelectedClicked` EditTrigger 미설정 | `setEditTriggers`에 `SelectedClicked` 추가 |
+
+**수정 파일**: `src/FileSystemBrowser.cpp` — `setupUi()` 함수의 `m_detailsView`·`m_listView` 초기화 블록
+
+```cpp
+// ✅ 올바른 설정 (BUG-001·BUG-002 동시 해결)
+m_detailsView->setEditTriggers(QAbstractItemView::SelectedClicked |
+                               QAbstractItemView::EditKeyPressed);
+m_listView->setEditTriggers(QAbstractItemView::SelectedClicked |
+                            QAbstractItemView::EditKeyPressed);
+
+// ❌ 기존 문제: Qt 기본값 (DoubleClicked | EditKeyPressed) — 명시적으로 재정의해야 함
+```
+
+---
+
+#### 0.6.4 Sprint 5.5 — 기본 UX 버그 수정 (Basic UX Bug Fixes)
+
+> 현재 Phase 5 Sprint 5까지 완료 후 Phase 6(Sprint 6~15)로 이어지는 계획에서,  
+> 기획팀 4인 재검수 결과 기본 인터랙션 버그(BUG-001, BUG-002)가 발견됨.  
+> Phase 6 시작 전 즉시 수정 착수.
+
+| 스프린트 | 담당 | 작업 내용 | 상태 |
+|---------|------|-----------|------|
+| **Sprint 5.5 (긴급 버그 수정)** | B | BUG-001·BUG-002 수정: `FileSystemBrowser` EditTrigger 재설정 | ✅ **완료** |
+| ~~Sprint 6~~ ✅ | B | 파일/폴더 색상 코딩 (ColorManager 신규 모듈) | ✅ **완료** |
+| ~~Sprint 7~~ ✅ | A | 폴더 크기 컬럼 (백그라운드 스레드 계산) | ✅ **완료** |
+| ~~Sprint 8~~ ✅ | B | 탭 드래그·패널 간 이동 | ✅ **완료** |
+
+---
+
+#### 0.6.5 개발팀 리더 + 팀원 3인 회의 결과 — 기본 UX 수정 (Dev Team Meeting Notes: 2026-03-26)
+
+> 참여: 개발 리더 · 개발자 A · 개발자 B · 개발자 C
+
+**회의 결론:**
+
+1. **BUG-001·BUG-002 즉시 수정** — `FileSystemBrowser::setupUi()`에서 `QTreeView`·`QListView` 양쪽에 `setEditTriggers(SelectedClicked | EditKeyPressed)` 적용. 변경 범위 최소 (4줄 추가). 사이드이펙트 없음.
+
+2. **검증 방법**:
+   - 폴더 더블클릭 → 해당 폴더로 이동 확인 (편집 위젯 나타나지 않아야 함)
+   - 항목 단일 클릭 → 선택 → 재클릭 → 인라인 편집 텍스트박스 표시 확인
+   - F2 키 → 인라인 편집 텍스트박스 표시 확인 (기존 기능 보존)
+   - Enter 키 → 폴더 이동 / 파일 열기 확인 (기존 기능 보존)
+
+3. **아키텍처 영향도**: 없음 (단순 Qt 속성 설정).
+
+4. **우선순위 재확인**: 기본 마우스 인터랙션은 모든 사용자가 매번 사용하는 1순위 기능. 색상 코딩·폴더 크기 등 고급 기능보다 먼저 수정 필수.
+
+---
+
+### 0.7 기획·리더 전수 재점검 결과 (PM & Leader Re-Audit — Sprint 8 완료 후)
+
+> 작성 일자: 2026-03-26  
+> 검토자: PM · UX 디자이너 · 개발 리더  
+> 목적: Sprint 1~8 완료 후 §0.2 비교표의 **스테일(stale) 항목 전수 정리**, 잔여 격차(Gap) 재확인, 신규 발견 버그 목록화
+
+---
+
+#### 0.7.1 §0.2 비교표 업데이트 사항 요약 (Completed in Sprints 1~8)
+
+아래는 이번 재점검에서 `❌`/`⚠️` → `✅`로 정정한 항목 목록이다.  
+(§0.2 표에는 이미 직접 수정되어 있음.)
+
+| 기능 | 이전 상태 | 수정 후 | 구현 위치 |
+|------|-----------|---------|-----------|
+| 브레드크럼 UI | ❌ | ✅ | `BreadcrumbBar` — Sprint 2 |
+| 폴더 트리 사이드바 | ❌ | ✅ | `FolderTreePanel` — Sprint 3 |
+| 탭 이름 변경 | ❌ | ✅ | `FolderPane::onTabDoubleClicked` — Sprint 5 |
+| Ctrl+Tab 탭 전환 | ❌ | ✅ | `FolderPane::nextTab()` — Sprint 1 |
+| 새 폴더 F7 단축키 | ⚠️ | ✅ | `FileSystemBrowser` + `MainWindow` — Sprint 1 |
+| 속성 다이얼로그 (Alt+Enter) | ⚠️ | ✅ | `showProperties()` 전체 정보 — Sprint 1 |
+| F3 파일 보기 | ❌ | ✅ | `openWithViewer()` — Sprint 1 |
+| F4 파일 편집 | ❌ | ✅ | `openWithEditor()` — Sprint 1 |
+| F6 이동 | ❌ | ✅ | `moveToPath()` in MainWindow — Sprint 4 |
+| F9 이름 바꿔 복사 | ❌ | ✅ | `copyAndRename()` — Sprint 4 |
+| F10 종료 | ❌ | ✅ | `onExit()` — Sprint 1 |
+| 즐겨찾기 내보내기·가져오기 메뉴 UI | ⚠️ | ✅ | Bookmarks 메뉴 연결 — Sprint 5 |
+| 파일/폴더 색상 코딩 | ❌ | ✅ | `ColorManager` + `ColorRulesDialog` — Sprint 6 |
+| 폴더 크기 컬럼 계산 | ❌ | ✅ | `FolderSizeWorker` — Sprint 7 |
+| 탭 드래그 — 패널 간 이동 | ❌ | ✅ | `DraggableTabBar` — Sprint 8 |
+
+---
+
+#### 0.7.2 잔여 격차 목록 (Remaining Gaps — Sprint 9+ 대상)
+
+> 아래는 현재도 미구현 상태인 항목의 완전한 목록이다.
+
+##### 🔴 핵심 버그·기능 누락 (즉시 처리 권고)
+
+| # | 항목 | 현재 상태 | 권고 조치 |
+|---|------|-----------|-----------|
+| **~~BUG-003~~** ✅ | **F5 키 동작 충돌** — 파일 목록 포커스 시 F5가 `refresh()`를 호출하고 이벤트를 소비하여 MainWindow의 "Copy To" 핸들러에 도달하지 못함 | 수정 완료 | `FileSystemBrowser::keyPressEvent` 에서 F5 case 삭제; 새로고침은 Ctrl+R 전용. MainWindow에서 F5 = Copy To 단일화. |
+| GAP-001 | **CRC 복사 검증 미구현** — 설정 다이얼로그에 체크박스 있으나 `FileOperations.cpp` 에 실제 검증 로직 없음 | 설정만 존재 | `QCryptographicHash` (SHA-1 또는 MD5)로 복사 후 검증 구현 |
+| GAP-002 | **휴지통(Recycle Bin) 미구현** — 삭제 시 `QFile::remove()` 로 영구 삭제만 수행, `QFile::moveToTrash()` 미사용 | 영구 삭제 | `QFile::moveToTrash()` 사용하도록 FileOperations 수정; 설정에서 "영구 삭제 / 휴지통 이동" 선택 추가 |
+
+##### 🟠 우선순위 2 잔여 항목 (Sprint 9~11 예정)
+
+| # | 항목 | 현재 상태 |
+|---|------|-----------|
+| SP-9 | 패널 동기화 탐색 — 한 패널 이동 시 다른 패널 자동 동기화 | ❌ 미구현 |
+| SP-9 | 패널 잠금 (Lock Pane) | ❌ 미구현 |
+| SP-9 | 패널 복제 (Clone Pane) | ❌ 미구현 |
+| SP-10 | 레이아웃 즐겨찾기 저장 (최대 64개) | ❌ 미구현 |
+| SP-11 | PDF 미리보기 (Qt6::Pdf 모듈) | ❌ 미구현 |
+| SP-11 | 정규식(Regex) 검색 | ❌ 미구현 |
+
+##### 🟡 우선순위 3 잔여 항목 (Sprint 12~15 예정)
+
+| # | 항목 | 현재 상태 |
+|---|------|-----------|
+| SP-12 | 포터블 모드 (INI 파일) | ❌ 미구현 |
+| SP-13 | 한국어 번역 .ts/.qm 파일 | ❌ 미구현 |
+| SP-14 | ZIP 내부 탐색 | ❌ 미구현 |
+| SP-15 | 폴더 비교 | ❌ 미구현 |
+| SP-15 | 디렉터리 목록 내보내기 (CSV·TXT) | ❌ 미구현 |
+| — | 특수 폴더 빠른 접근 (Desktop·Docs·Downloads) | ❌ 미구현 |
+| — | 파일 색상 필터 하이라이트 | ❌ 미구현 |
+| — | 정규식(Regex) 검색 | ❌ 미구현 |
+| — | 중복 파일 하이라이트 | ❌ 미구현 |
+| — | 타일 보기 / 엑스트라 라지 아이콘 보기 | ❌ 미구현 |
+| — | 컬럼 표시/숨김 UI | ❌ 미구현 |
+| — | 패널 레이아웃 즐겨찾기 (64개) | ❌ 미구현 |
+| — | 즐겨찾기 항목 사용자 정의 아이콘·이름 | ❌ 미구현 |
+| — | 툴바 커스터마이즈 | ❌ 미구현 |
+| — | 마우스 제스처 | ❌ 미구현 |
+| — | 고대비(High Contrast) 모드 | ❌ 미구현 |
+| — | FTP/SFTP 원격 탐색 | ❌ 미구현 (장기 과제) |
+
+---
+
+#### 0.7.3 §7.1 모듈 목록 정정 사항 (Module List Corrections)
+
+- **`TabBar.h/cpp`** 항목 제거: 실제로 존재하지 않는 파일이었음. 탭바는 `FolderPane.h/cpp` 내부의 Qt `QTabBar` 및 `DraggableTabBar` (Sprint 8에서 `FolderPane.cpp`에 로컬 클래스로 구현) 로 처리됨.
+- **`AddressBar.h/cpp`** 레거시 파일로 표시: `BreadcrumbBar`로 대체되었으나 파일이 남아 있음. 향후 정리 필요.
+- Sprint 2~8에서 추가된 신규 파일 6개(`BreadcrumbBar`, `FolderTreePanel`, `ColorManager`, `ColorRulesDialog`, `FolderSizeWorker`, 그리고 드라이브바 `DriveBar`) 가 §7.1 현재 구현 모듈 목록에 반영됨.
+
+---
+
+#### 0.7.4 리더 최종 확인 체크리스트 (Leader Sign-off — Sprint 8 완료 시점)
+
+- [ ] §0.2 비교표 업데이트 내용 (§0.7.1) 검토 완료
+- [x] BUG-003 (F5 충돌) 수정 완료 — `FileSystemBrowser` F5 case 삭제, Ctrl+R로 통일
+- [ ] GAP-001 (CRC 미구현) 처리 방향 확인 및 담당자 지정
+- [ ] GAP-002 (휴지통 미구현) 처리 방향 확인 및 담당자 지정
+- [ ] Sprint 9 착수 범위 (패널 동기화·잠금·복제) 승인
+- [ ] **리더 서명**: _________________________  날짜: _____________
+
+---
+
+### 0.8 기획팀 UX 심층 감사 결과 (UX Deep-Audit — 2026-03-26)
+
+> 작성 일자: 2026-03-26  
+> 작성 팀: 기획팀 PM · UX 디자이너  
+> 목적: 현재 구현 코드(`src/`)를 전수 분석하여 **사용자 체감 UX 관점**에서 누락·불일치·개선 가능 항목을 도출하고 즉시 수정할 것과 백로그에 추가할 것을 구분
+
+---
+
+#### 0.8.1 발견된 UX 문제 목록 (Findings)
+
+| # | 구분 | 위치 | 문제 내용 | 심각도 | 상태 |
+|---|------|------|-----------|--------|------|
+| UX-001 | **레이아웃 오류** | `FolderPane::setupUi()` | 탭바가 브레드크럼 아래에 배치됨. Q-Dir 및 §0.6.1 레이아웃 기준서에 따르면 탭이 맨 위, 브레드크럼이 그 아래 위치해야 함. | 🔴 High | ✅ 수정 완료 |
+| UX-002 | **상태바 미완성** | `MainWindow::updateStatusBar()` | `m_statusItems` 레이블이 생성되어 있으나 값이 채워지지 않음 — 현재 폴더의 항목 수가 상태바에 표시되지 않음 | 🔴 High | ✅ 수정 완료 |
+| UX-003 | **보기 모드 전환 불가** | `MainWindow::setupMenuBar()` | `FileSystemBrowser`에 `setViewMode()` API가 있고 `ViewMode` 열거형도 정의되어 있으나, View 메뉴에 보기 모드 전환 항목이 없어 사용자가 Details/List/Icons/Thumbnails를 변경할 방법이 없음 | 🔴 High | ✅ 수정 완료 |
+| UX-004 | **탭 닫기 버튼 항상 표시** | `FolderPane::setupUi()` | `setTabsClosable(true)` 고정 설정으로 탭이 1개일 때도 닫기 버튼이 표시됨. 클릭해도 아무 일이 없어 혼란을 유발. 브라우저 관례상 탭이 2개 이상일 때만 닫기 버튼 노출 | 🟠 Medium | ✅ 수정 완료 |
+| UX-005 | **주소창 오류 피드백 부족** | `BreadcrumbBar::onReturnPressed()` | 존재하지 않는 경로 입력 시 빨간 테두리만 표시, 오류 이유를 설명하는 툴팁/문구 없음. 사용자가 왜 실패했는지 알 수 없음 | 🟠 Medium | ✅ 수정 완료 |
+| UX-006 | **툴바 Refresh 버튼 없음** | `MainWindow::setupToolBar()` | 가장 자주 사용하는 작업 중 하나인 새로고침(Ctrl+R)이 툴바에 없음. 메뉴나 단축키를 모르면 접근 불가 | 🟠 Medium | ✅ 수정 완료 |
+| UX-007 | **패널 전환 툴바 버튼 없음** | `MainWindow::setupToolBar()` | 1/2/3/4 패널 전환이 View > Layout 서브메뉴에만 있어 접근이 깊음. Q-Dir은 툴바에 1~4 버튼을 제공함 | 🟠 Medium | ✅ 수정 완료 |
+| UX-008 | **About 다이얼로그 내용 시효 만료** | `MainWindow::setupMenuBar()` | "v1.0.2", "Phase 5 features"로 표기되어 있어 Sprint 8 이후 현재 상태를 반영하지 못함 | 🟡 Low | ✅ 수정 완료 |
+| UX-009 | **탭 Ctrl+T 단축키 충돌 가능성** | `FolderPane::setupUi()` | "+" 버튼에 `setShortcut(Ctrl+T)`가 설정되어 있어 각 패널의 숨겨진 QPushButton이 Ctrl+T를 소비할 수 있음. MainWindow에서 Ctrl+T 미처리 시 예상치 못한 동작 가능 | 🟠 Medium | ✅ 수정 완료 (shortcut 제거, MainWindow 핸들러로 일원화) |
+| UX-010 | **경로 변경 시 상태바 미갱신** | `MainWindow::setupConnections()` | `pathChanged` 시그널 연결에서 `updateStatusBar()`가 호출되지 않아 폴더 이동 시 `m_statusItems` 항목 수가 갱신되지 않음 | 🔴 High | ✅ 수정 완료 |
+
+---
+
+#### 0.8.2 즉시 수정 결과 요약 (Fixes Applied)
+
+| 수정 파일 | 수정 내용 |
+|-----------|-----------|
+| `src/FolderPane.cpp` | UX-001: 레이아웃 순서 변경 — tabWidget 먼저, m_addressBar 두 번째 |
+| `src/FolderPane.cpp` | UX-004: `setTabsClosable(false)` 기본값 + `updateTabCloseButtons()` 추가 — 탭 수에 따라 동적 제어 |
+| `src/FolderPane.cpp` | UX-009: "+" 버튼 `setShortcut` 제거 |
+| `src/FolderPane.h` | `updateTabCloseButtons()` 메서드 선언 추가 |
+| `src/BreadcrumbBar.cpp` | UX-005: 유효하지 않은 경로 입력 시 `setToolTip("Path does not exist: ...")` 추가; 성공 시 툴팁 초기화 |
+| `src/MainWindow.cpp` | UX-002 + UX-010: `updateStatusBar()`에 항목 수 계산 추가; `pathChanged` 시그널에서 `updateStatusBar()` 호출 |
+| `src/MainWindow.cpp` | UX-003: View 메뉴에 "View Mode" 서브메뉴 추가 (Details / List / Icons / Thumbnails, QActionGroup 배타 선택) |
+| `src/MainWindow.cpp` | UX-006: 툴바에 Refresh 버튼 추가 (Ctrl+R) |
+| `src/MainWindow.cpp` | UX-007: 툴바에 패널 전환 버튼 1/2/3/4 추가 (Ctrl+F1~F4 단축키) |
+| `src/MainWindow.cpp` | UX-008: About 다이얼로그 버전/기능 목록 업데이트 (v1.1.0, Sprint 8 반영) |
+| `src/MainWindow.h` | `onSetViewMode(ViewMode)` 슬롯, 뷰모드 액션 멤버, `#include QActionGroup` 추가 |
+
+---
+
+#### 0.8.3 백로그 — 추가 UX 개선 사항 (Backlog Items, Sprint 9+)
+
+> 이번 감사에서 발견됐으나 즉시 수정 범위를 벗어나는 항목 (별도 스프린트 계획 필요)
+
+| # | 항목 | 설명 | 권고 스프린트 |
+|---|------|------|---------------|
+| UX-B01 | **뷰 모드 퍼-패널 독립성** | 현재 View Mode 메뉴는 모든 패널에 동시 적용됨. Q-Dir처럼 패널별 독립 뷰 모드 선택이 필요 (각 패널 우클릭 컨텍스트 메뉴 또는 툴바에 드롭다운 추가) | ✅ 수정 완료 |
+| UX-B02 | **컬럼 표시/숨김 UI** | 상세 보기에서 이름·크기·유형·수정일 컬럼을 사용자가 헤더 우클릭으로 숨기거나 표시할 수 없음 | ✅ 수정 완료 |
+| UX-B03 | **탭에 파일 경로 아이콘** | 탭 레이블에 폴더 아이콘(QFileIconProvider)을 표시하면 다수 탭 구분이 용이 | ✅ 수정 완료 |
+| UX-B04 | **드래그 앤 드롭 시각 피드백** | 파일을 다른 패널로 드래그할 때 드롭 가능 영역 하이라이트가 없음. QDrag 픽스맵과 `dragMoveEvent` 스타일 추가 필요 | ✅ 수정 완료 |
+| UX-B05 | **북마크 사이드바 드래그 순서 변경** | `QListWidget` 기반 북마크 사이드바가 드래그 재정렬을 지원하지 않음 (`DragDropMode::InternalMove` 미설정) | ✅ 수정 완료 |
+| UX-B06 | **특수 폴더 빠른 접근** | 폴더 트리 상단에 Desktop·Documents·Downloads 고정 항목 추가 (`QStandardPaths` 활용) | ✅ 수정 완료 |
+| UX-B07 | **패널 전환 시 포커스 표시** | 활성 패널 border 색은 있으나 비활성 상태에서 어느 패널이 활성인지 초기 시작 시 명확하지 않음 — 초기 로드 시 `pane[0]->setActive(true)` 호출 필요 | ✅ 수정 완료 |
+| UX-B08 | **패널 1개 모드에서 레이아웃 버튼 상태** | 툴바의 패널 수 버튼이 현재 상태를 반영하는 시각적 활성 상태(checked/pressed)가 없음 | ✅ 수정 완료 |
+
+> **UX 백로그 전 항목 완료 — Sprint 9 종료**
+
+---
+
+#### 0.8.5 추가 개선 사항 수집 Pass 1 (Sprint 9 — 2026-03-26)
+
+> 백로그 UX-B03/B05/B06/B08 를 Sprint 9에서 구현 완료
+
+| 수정 파일 | 수정 내용 |
+|-----------|-----------|
+| `src/MainWindow.h` | `m_actPane1~4` 멤버 추가, `m_bookmarkList` 멤버 추가, `QListWidget` include |
+| `src/MainWindow.cpp` | UX-B08: 패널 버튼 `QActionGroup` 배타 그룹 + `setCheckable(true)`; `applyLayout()` 에서 `setChecked` 동기화 |
+| `src/MainWindow.cpp` | UX-B05: `m_bookmarkList` 드래그 모드 `InternalMove`; `rowsMoved` → `BookmarkManager::move()` 연결 |
+| `src/FolderPane.cpp` | UX-B03: `addTabInternal()` 및 `onBrowserPathChanged()` 에서 `QFileIconProvider`로 탭 아이콘 설정 |
+| `src/FolderTreePanel.h` | UX-B06: `m_quickAccess(QListWidget)` 멤버 추가, `buildQuickAccess()` 선언 |
+| `src/FolderTreePanel.cpp` | UX-B06: "Quick Access" 섹션 (Home/Desktop/Documents/Downloads/Music/Pictures/Videos) 폴더 트리 상단에 추가 |
+
+#### 0.8.6 추가 개선 사항 수집 Pass 2 (Sprint 9 — 2026-03-26)
+
+> 백로그 UX-B01/B02/B04 를 Sprint 9에서 구현 완료 — 전체 UX 백로그 종료
+
+| 수정 파일 | 수정 내용 |
+|-----------|-----------|
+| `src/FolderPane.h` | UX-B01: `viewMode()`/`setViewMode()` 공개 API, `m_viewModeBtn`, `m_viewMode`, `m_dropHighlight` 멤버 추가; `dragLeaveEvent` override 추가 |
+| `src/FolderPane.cpp` | UX-B01: `setupUi()` 에 뷰 모드 드롭다운 버튼(`QToolButton + QMenu`) 추가; `setViewMode()`, `syncViewModeButton()` 구현; 새 탭 생성 시 현재 뷰 모드 자동 적용 |
+| `src/FolderPane.cpp` | UX-B04: `dragEnterEvent` 에서 `text/uri-list` MIME 수락 추가; `dragLeaveEvent` 추가; `setActiveStyle()` 에 드롭 하이라이트(파란 점선) 분기 추가 |
+| `src/MainWindow.cpp` | UX-B01: `onSetViewMode()` 를 전체 패널 → 활성 패널 전용으로 변경 |
+| `src/FileSystemBrowser.h` | UX-B02: `onHeaderContextMenu(const QPoint&)` 슬롯 선언 |
+| `src/FileSystemBrowser.cpp` | UX-B02: 헤더에 `Qt::CustomContextMenu` 정책 설정; `onHeaderContextMenu()` 구현 (Size/Type/Date Modified 체크 토글) |
+
+---
 
 | 항목 | 내용 |
 |------|------|
@@ -495,39 +867,49 @@
 
 ## 7. 모듈 구조 (Module Structure)
 
-### 7.1 현재 구현 모듈 (Existing)
+### 7.1 현재 구현 모듈 (Existing — as of Sprint 8)
 
 ```
 src/
-├── main.cpp                  # 진입점
-├── MainWindow.h/cpp          # 메인 윈도우 (패널 배치, 메뉴, 툴바)
-├── FolderPane.h/cpp          # 개별 패널 (주소창 + 탭바 + 파일뷰)
-├── TabBar.h/cpp              # 패널 내 탭 위젯
-├── FileSystemBrowser.h/cpp   # 파일 목록 뷰 (트리/리스트/상세)
-├── FileSystemModel.h/cpp     # QFileSystemModel 래퍼 + 정렬/필터 프록시
-├── AddressBar.h/cpp          # 경로 입력 + 브레드크럼 표시
-├── FileOperations.h/cpp      # 복사·이동·삭제·이름변경 (스레드)
-├── FileOperationDialog.h/cpp # 파일 작업 진행 다이얼로그
-├── BookmarkManager.h/cpp     # 즐겨찾기 관리
-├── PreviewPanel.h/cpp        # 미리보기 패널
-├── SettingsManager.h/cpp     # 설정 관리
-├── SettingsDialog.h/cpp      # 설정 다이얼로그 UI
-└── SearchDialog.h/cpp        # 파일 검색 다이얼로그
+├── main.cpp                   # 진입점
+├── MainWindow.h/cpp           # 메인 윈도우 (패널 배치, 메뉴, 툴바)
+├── FolderPane.h/cpp           # 개별 패널 (BreadcrumbBar + 탭바 + 파일뷰)
+│                              #   └─ DraggableTabBar (embedded) — Sprint 8
+├── FileSystemBrowser.h/cpp    # 파일 목록 뷰 (트리/리스트/아이콘/썸네일)
+├── FileSystemModel.h/cpp      # QFileSystemModel 래퍼 (색상 코딩·폴더 크기 통합)
+├── BreadcrumbBar.h/cpp        # 클릭 가능 경로 세그먼트 주소창 — Sprint 2
+├── FolderTreePanel.h/cpp      # 폴더 트리 사이드바 (DockWidget) — Sprint 3
+├── ColorManager.h/cpp         # 파일/폴더 색상 코딩 규칙 관리 — Sprint 6
+├── ColorRulesDialog.h/cpp     # 색상 규칙 편집 다이얼로그 — Sprint 6
+├── FolderSizeWorker.h/cpp     # 폴더 크기 비동기 계산 (QtConcurrent) — Sprint 7
+├── AddressBar.h/cpp           # (레거시 — BreadcrumbBar로 대체됨, 미사용)
+├── FileOperations.h/cpp       # 복사·이동·삭제·이름변경 (스레드)
+├── FileOperationDialog.h/cpp  # 파일 작업 진행 다이얼로그
+├── BookmarkManager.h/cpp      # 즐겨찾기 관리 (JSON 내보내기·가져오기)
+├── DriveBar.h/cpp             # 드라이브/볼륨 버튼 바
+├── PreviewPanel.h/cpp         # 미리보기 패널
+├── SettingsManager.h/cpp      # 설정 관리
+├── SettingsDialog.h/cpp       # 설정 다이얼로그 UI
+└── SearchDialog.h/cpp         # 파일 검색 다이얼로그
 ```
 
-### 7.2 신규 추가 모듈 계획 (Planned New Modules)
+### 7.2 신규 추가 모듈 현황 (New Modules — Done vs. Planned)
 
 ```
 src/
-├── BreadcrumbBar.h/cpp       # 브레드크럼 주소창 (AddressBar 확장 또는 대체)
-├── FolderTreePanel.h/cpp     # 폴더 트리 사이드바 (QTreeView + DockWidget)
-├── ColorManager.h/cpp        # 파일/폴더 색상 코딩 규칙 관리
-├── FolderSizeWorker.h/cpp    # 폴더 크기 비동기 계산 (QtConcurrent)
-├── LayoutManager.h/cpp       # 레이아웃 즐겨찾기 저장·불러오기
-├── PaneSyncManager.h/cpp     # 패널 간 동기화 탐색 제어
-├── ZipBrowser.h/cpp          # ZIP 파일 내부 탐색 (libarchive 또는 QuaZIP)
-├── ExportDialog.h/cpp        # 디렉터리 목록 내보내기 (CSV·TXT·HTML)
-└── FolderCompareDialog.h/cpp # 폴더 비교 다이얼로그
+# ── Sprint 2-8 에서 이미 구현 완료 ─────────────────────────────────────────
+├── BreadcrumbBar.h/cpp        ✅ 완료 — 클릭 가능 경로 세그먼트 주소창
+├── FolderTreePanel.h/cpp      ✅ 완료 — 폴더 트리 사이드바 (DockWidget)
+├── ColorManager.h/cpp         ✅ 완료 — 파일/폴더 색상 코딩 규칙
+├── ColorRulesDialog.h/cpp     ✅ 완료 — 색상 규칙 편집 다이얼로그
+├── FolderSizeWorker.h/cpp     ✅ 완료 — 폴더 크기 비동기 계산
+
+# ── Sprint 9~15 에서 구현 예정 ────────────────────────────────────────────
+├── PaneSyncManager.h/cpp      🔲 예정 — 패널 간 동기화 탐색 제어 (Sprint 9)
+├── LayoutManager.h/cpp        🔲 예정 — 레이아웃 즐겨찾기 저장·불러오기 (Sprint 10)
+├── ZipBrowser.h/cpp           🔲 예정 — ZIP 파일 내부 탐색 (Sprint 14)
+├── ExportDialog.h/cpp         🔲 예정 — 디렉터리 목록 내보내기 CSV·TXT (Sprint 15)
+└── FolderCompareDialog.h/cpp  🔲 예정 — 폴더 비교 다이얼로그 (Sprint 15)
 ```
 
 ---
@@ -591,3 +973,10 @@ src/
 - [x] F6 이동·F9 복사+이름변경 다이얼로그 (FileSystemBrowser 레벨)
 - [x] 즐겨찾기 내보내기·가져오기 메뉴 UI (Bookmarks 메뉴에 추가)
 - [x] 탭 이름 변경 (더블클릭 또는 우클릭 컨텍스트 메뉴)
+
+#### Sprint 5.5 — 긴급 기본 UX 버그 수정 (Dev B) ✅ 완료
+- [x] BUG-001 수정: `QTreeView`·`QListView` 에서 `DoubleClicked` EditTrigger 제거
+  → 폴더 더블클릭 시 이름편집 위젯 충돌 없이 해당 폴더로 이동
+- [x] BUG-002 수정: `SelectedClicked` EditTrigger 추가
+  → 이미 선택된 항목 재클릭 시 인라인 이름 변경 시작 (Windows 탐색기 동일 동작)
+- [x] 두 변경 모두 `FileSystemBrowser::setupUi()` 내 4줄 추가로 최소 범위 수정

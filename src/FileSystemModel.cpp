@@ -1,14 +1,25 @@
 #include "FileSystemModel.h"
+#include "FolderSizeWorker.h"
+#include "ColorManager.h"
 
 #include <QtCore/QDir>
 #include <QtCore/QLocale>
+#include <QtGui/QBrush>
 
 // ──────────────────────────────────────────────────────────────────────────────
 FileSystemModel::FileSystemModel(QObject *parent)
     : QFileSystemModel(parent)
 {
-    // Show all file types by default; directories are always shown.
     setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
+
+    m_sizeWorker = new FolderSizeWorker(this);
+    connect(m_sizeWorker, &FolderSizeWorker::sizeReady,
+            this, &FileSystemModel::onFolderSizeReady);
+
+    // Refresh view when colour rules change.  layoutChanged() is the correct
+    // signal to force all visible items to repaint their decorations.
+    connect(ColorManager::instance(), &ColorManager::rulesChanged,
+            this, [this]() { emit layoutChanged(); });
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -51,13 +62,49 @@ QVariant FileSystemModel::headerData(int section,
 // ──────────────────────────────────────────────────────────────────────────────
 QVariant FileSystemModel::data(const QModelIndex &index, int role) const
 {
+    if (!index.isValid())
+        return QFileSystemModel::data(index, role);
+
     // Human-readable size in the Size column (column 1)
-    if (index.isValid() && index.column() == 1 && role == Qt::DisplayRole) {
+    if (index.column() == 1 && role == Qt::DisplayRole) {
         const QFileInfo fi = fileInfo(index);
-        if (fi.isDir()) return QString(); // directories show no size
+        if (fi.isDir()) {
+            const QString absPath = fi.absoluteFilePath();
+            if (m_folderSizes.contains(absPath)) {
+                return QLocale::system().formattedDataSize(
+                    m_folderSizes.value(absPath), 2,
+                    QLocale::DataSizeTraditionalFormat);
+            }
+            // Kick off async computation and show placeholder
+            m_sizeWorker->requestSize(absPath);
+            return tr("…");
+        }
         const qint64 bytes = fi.size();
         return QLocale::system().formattedDataSize(
             bytes, 2, QLocale::DataSizeTraditionalFormat);
     }
+
+    // Colour coding
+    if (role == Qt::BackgroundRole || role == Qt::ForegroundRole) {
+        const QString name = fileInfo(index).fileName();
+        QColor bg, fg;
+        if (ColorManager::instance()->colorsForFile(name, bg, fg)) {
+            if (role == Qt::BackgroundRole && bg.isValid())
+                return QBrush(bg);
+            if (role == Qt::ForegroundRole && fg.isValid())
+                return QBrush(fg);
+        }
+        return QVariant();
+    }
+
     return QFileSystemModel::data(index, role);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+void FileSystemModel::onFolderSizeReady(const QString &path, qint64 bytes)
+{
+    m_folderSizes.insert(path, bytes);
+    const QModelIndex idx = index(path, 1);
+    if (idx.isValid())
+        emit dataChanged(idx, idx, {Qt::DisplayRole});
 }

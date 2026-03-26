@@ -99,6 +99,10 @@ QWidget *SettingsDialog::buildFileOpsTab()
     m_verifyCopy->setChecked(m_mgr->verifyCopyChecksum());
     form->addRow(m_verifyCopy);
 
+    m_useTrash = new QCheckBox(tr("Move deleted files to Trash (instead of permanent delete)"), w);
+    m_useTrash->setChecked(m_mgr->useTrash());
+    form->addRow(m_useTrash);
+
     m_showHidden = new QCheckBox(tr("Show hidden files and folders"), w);
     m_showHidden->setChecked(m_mgr->showHiddenFiles());
     form->addRow(m_showHidden);
@@ -164,6 +168,7 @@ void SettingsDialog::onAccepted()
     m_mgr->setTheme(static_cast<Theme>(m_theme->currentIndex()));
     m_mgr->setConfirmDelete(m_confirmDelete->isChecked());
     m_mgr->setVerifyCopyChecksum(m_verifyCopy->isChecked());
+    m_mgr->setUseTrash(m_useTrash->isChecked());
     m_mgr->setShowThumbnails(m_showThumbnails->isChecked());
     m_mgr->setShowHiddenFiles(m_showHidden->isChecked());
     accept();

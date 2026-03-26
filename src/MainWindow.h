@@ -2,13 +2,17 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
+#include <QtGui/QActionGroup>
 #include <QtGui/QAction>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QDockWidget>
+#include <QtWidgets/QListWidget>
 #include <QtCore/QSettings>
 #include <array>
+
+#include "FileSystemBrowser.h"   // for ViewMode enum
 
 class FolderPane;
 class BookmarkManager;
@@ -69,11 +73,18 @@ private slots:
     void onTogglePreview();
     void onToggleBookmarkSidebar();
     void onToggleFolderTree();
+    void onSetViewMode(ViewMode mode); ///< Apply view mode to all visible panes
+
+    // SP-9: Panel sync / lock / clone
+    void onTogglePaneSync();    ///< Toggle directory-sync across all visible panes
+    void onLockPane();          ///< Lock / unlock the active pane (prevent navigation)
+    void onClonePane();         ///< Clone active pane's current path to other panes
 
     // Tools menu
     void onOpenSearch();
     void onOpenSettings();
     void onOpenTerminal();
+    void onOpenColorRules();
 
     // Bookmarks menu
     void onAddBookmark();
@@ -143,7 +154,32 @@ private:
     QAction *m_actBookmarkSidebar{nullptr};
     QAction *m_actFolderTree{nullptr};
 
+    // SP-9: pane panel actions
+    QAction *m_actPaneSync{nullptr};   ///< Toggle sync-navigation
+    QAction *m_actLockPane{nullptr};   ///< Lock/unlock active pane
+    QAction *m_actClonePane{nullptr};  ///< Clone active pane path to others
+
+    // SP-9: sync state
+    bool m_paneSyncEnabled{false};
+
+    // View mode actions (exclusive group in View > View Mode sub-menu)
+    QAction *m_actViewDetails{nullptr};
+    QAction *m_actViewList{nullptr};
+    QAction *m_actViewIcons{nullptr};
+    QAction *m_actViewThumbnails{nullptr};
+    ViewMode m_currentViewMode{ViewMode::Details};
+
+    // Pane-count toolbar actions (exclusive group; checked = active count)
+    QAction *m_actPane1{nullptr};
+    QAction *m_actPane2{nullptr};
+    QAction *m_actPane3{nullptr};
+    QAction *m_actPane4{nullptr};
+
+    // Bookmark list widget (promoted to member for drag-reorder wiring)
+    QListWidget *m_bookmarkList{nullptr};
+
     // Managers
     BookmarkManager *m_bookmarkManager{nullptr};
     SettingsManager *m_settingsManager{nullptr};
 };
+

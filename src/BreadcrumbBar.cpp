@@ -271,10 +271,12 @@ void BreadcrumbBar::onReturnPressed()
     const QString resolved = QDir::cleanPath(text);
     if (!QFileInfo::exists(resolved)) {
         m_lineEdit->setStyleSheet(QStringLiteral("QLineEdit { border: 1px solid red; }"));
+        m_lineEdit->setToolTip(tr("Path does not exist: %1").arg(resolved));
         return;
     }
 
     m_lineEdit->setStyleSheet(QString());
+    m_lineEdit->setToolTip(QString());  // clear any previous "path does not exist" tooltip
     m_currentPath   = resolved;
     m_lastCommitted = resolved;
     switchToBreadcrumbMode();

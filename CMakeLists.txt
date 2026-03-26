@@ -51,6 +51,9 @@ set(SOURCES
     src/SettingsDialog.cpp
     src/SearchDialog.cpp
     src/DriveBar.cpp
+    src/ColorManager.cpp
+    src/ColorRulesDialog.cpp
+    src/FolderSizeWorker.cpp
 )
 
 set(HEADERS
@@ -69,6 +72,9 @@ set(HEADERS
     src/SettingsDialog.h
     src/SearchDialog.h
     src/DriveBar.h
+    src/ColorManager.h
+    src/ColorRulesDialog.h
+    src/FolderSizeWorker.h
 )
 
 if(WIN32)
