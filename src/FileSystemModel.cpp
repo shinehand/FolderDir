@@ -19,7 +19,8 @@ FileSystemModel::FileSystemModel(QObject *parent)
     // Refresh view when colour rules change
     connect(ColorManager::instance(), &ColorManager::rulesChanged,
             this, [this]() {
-        emit dataChanged(index(rootPath()), index(rootPath()),
+        // Notify the entire model so all visible items repaint their colours
+        emit dataChanged(QModelIndex{}, QModelIndex{},
                          {Qt::BackgroundRole, Qt::ForegroundRole});
     });
 }

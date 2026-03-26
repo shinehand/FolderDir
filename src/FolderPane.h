@@ -7,6 +7,7 @@
 #include <QtWidgets/QStackedWidget>
 #include <QtCore/QStringList>
 #include <QtCore/QUrl>
+#include <QtCore/QSet>
 
 class BreadcrumbBar;
 class FileSystemBrowser;
@@ -94,4 +95,7 @@ private:
 
     BookmarkManager *m_bookmarkManager{nullptr};
     bool m_active{false};
+
+    /** Registry of all live FolderPane instances for drag-drop pointer validation. */
+    static QSet<FolderPane *> s_liveInstances;
 };

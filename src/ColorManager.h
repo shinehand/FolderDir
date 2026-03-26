@@ -4,6 +4,7 @@
 #include <QtCore/QVector>
 #include <QtGui/QColor>
 #include <QtCore/QString>
+#include <QtCore/QRegularExpression>
 
 /**
  * @brief ColorRule — maps a glob pattern to background/foreground colours.
@@ -13,9 +14,10 @@
  * An invalid QColor means "use default".
  */
 struct ColorRule {
-    QString pattern;    ///< e.g. "*.cpp", "*.h", "Makefile"
-    QColor  background; ///< row background; invalid = default
-    QColor  foreground; ///< row text colour; invalid = default
+    QString             pattern;    ///< e.g. "*.cpp", "*.h", "Makefile"
+    QColor              background; ///< row background; invalid = default
+    QColor              foreground; ///< row text colour; invalid = default
+    QRegularExpression  regex;      ///< pre-compiled, case-insensitive
 };
 
 /**
@@ -48,6 +50,7 @@ signals:
 
 private:
     explicit ColorManager(QObject *parent = nullptr);
+    static void compileRule(ColorRule &rule);
     static ColorManager *s_instance;
     QVector<ColorRule> m_rules;
 };

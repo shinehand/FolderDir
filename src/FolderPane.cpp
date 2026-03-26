@@ -107,18 +107,25 @@ private:
     int         m_dragTabIndex{-1};
 };
 
+// Static registry of all live FolderPane instances
+QSet<FolderPane *> FolderPane::s_liveInstances;
+
 // ──────────────────────────────────────────────────────────────────────────────
 FolderPane::FolderPane(BookmarkManager *bm, QWidget *parent)
     : QWidget(parent)
     , m_bookmarkManager(bm)
 {
+    s_liveInstances.insert(this);
     setAcceptDrops(true);
     setupUi();
     // Default: open home directory
     addTabInternal(QDir::homePath());
 }
 
-FolderPane::~FolderPane() = default;
+FolderPane::~FolderPane()
+{
+    s_liveInstances.remove(this);
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 void FolderPane::setupUi()
@@ -449,10 +456,12 @@ void FolderPane::dropEvent(QDropEvent *event)
     if (!ok) return;
     auto *sourcePane = reinterpret_cast<FolderPane *>(panePtr);
 
-    const int srcIndex = parts.at(1).toInt();
-    const QString tabPath = parts.mid(2).join(QLatin1Char('|')); // path may contain '|'
+    // Validate the pointer is still a live pane before dereferencing
+    if (!s_liveInstances.contains(sourcePane)) return;
 
     if (sourcePane == this) return; // same-pane moves handled by QTabBar
+
+    const QString tabPath = parts.mid(2).join(QLatin1Char('|')); // path may contain '|'
 
     newTab(tabPath);
     // Signal MoveAction so the source removes the tab
