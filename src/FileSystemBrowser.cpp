@@ -27,6 +27,7 @@
 #include "FileSystemModel.h"
 #include "FileOperations.h"
 #include "FileOperationDialog.h"
+#include "SettingsManager.h"
 
 // Details 뷰 컬럼 인덱스 (QFileSystemModel 순서 고정) — UX-B02
 static constexpr int COL_NAME = 0;
@@ -330,6 +331,9 @@ void FileSystemBrowser::pasteHere()
     auto *op = new FileOperation(
         cut ? FileOperationKind::Move : FileOperationKind::Copy,
         srcs, m_currentPath);
+    // GAP-001: 복사 시 체크섬 검증 연동
+    if (!cut && m_settingsMgr && m_settingsMgr->verifyCopyChecksum())
+        op->setVerifyChecksum(true);
 
     auto *dlg = new FileOperationDialog(op, this);
     dlg->setAttribute(Qt::WA_DeleteOnClose);
@@ -342,9 +346,15 @@ void FileSystemBrowser::deleteSelected(bool permanent)
     const QStringList paths = selectedPaths();
     if (paths.isEmpty()) return;
 
-    if (!confirmDelete(paths.size())) return;
+    // Settings-aware confirmation (skip if confirmDelete is disabled)
+    if (!m_settingsMgr || m_settingsMgr->confirmDelete()) {
+        if (!confirmDelete(paths.size())) return;
+    }
 
     auto *op = new FileOperation(FileOperationKind::Delete, paths, QString());
+    // GAP-002: Shift+Delete (permanent=true) は常に永久削除; それ以外は設定に従う
+    if (!permanent && m_settingsMgr && m_settingsMgr->useTrash())
+        op->setUseTrash(true);
     auto *dlg = new FileOperationDialog(op, this);
     dlg->setAttribute(Qt::WA_DeleteOnClose);
     op->start();
@@ -556,6 +566,9 @@ void FileSystemBrowser::copyToPath(const QString &destPath)
     }
 
     auto *op = new FileOperation(FileOperationKind::Copy, srcs, cleanDest);
+    // GAP-001: 체크섬 검증 연동
+    if (m_settingsMgr && m_settingsMgr->verifyCopyChecksum())
+        op->setVerifyChecksum(true);
     auto *dlg = new FileOperationDialog(op, this);
     dlg->setAttribute(Qt::WA_DeleteOnClose);
     op->start();

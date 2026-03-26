@@ -52,6 +52,9 @@ public:
     int currentTabIndex() const;
     void restoreTabs(const QStringList &paths, int activeIndex);
 
+    /** Inject settings so file operations respect user preferences (GAP-001/002). */
+    void setSettingsManager(class SettingsManager *mgr);
+
 public slots:
     void navigateTo(const QString &path);
     void newTab(const QString &path = QString());
@@ -106,7 +109,8 @@ private:
     QVBoxLayout     *m_layout{nullptr};
     QToolButton     *m_viewModeBtn{nullptr};  ///< Per-pane view-mode selector (UX-B01)
 
-    BookmarkManager *m_bookmarkManager{nullptr};
+    BookmarkManager   *m_bookmarkManager{nullptr};
+    SettingsManager   *m_settingsMgr{nullptr};  ///< injected for GAP-001/002
     bool     m_active{false};
     ViewMode m_viewMode{ViewMode::Details};   ///< Per-pane view mode (UX-B01)
 

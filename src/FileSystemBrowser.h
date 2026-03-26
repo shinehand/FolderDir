@@ -49,6 +49,9 @@ public:
     bool showHidden() const;
     void setShowHidden(bool show);
 
+    /** Inject settings so file operations respect user preferences (GAP-001/002). */
+    void setSettingsManager(class SettingsManager *mgr) { m_settingsMgr = mgr; }
+
     QStringList selectedPaths() const;
     QAbstractItemView *view() const;
 
@@ -120,6 +123,7 @@ private:
     ViewMode          m_viewMode{ViewMode::Details};
 
     FileSystemModel  *m_model{nullptr};
+    class SettingsManager *m_settingsMgr{nullptr};  ///< optional, for GAP-001/002
 
     QTreeView        *m_detailsView{nullptr};
     QListView        *m_listView{nullptr};

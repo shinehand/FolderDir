@@ -51,6 +51,7 @@ private:
     // File ops
     QCheckBox *m_confirmDelete{nullptr};
     QCheckBox *m_verifyCopy{nullptr};
+    QCheckBox *m_useTrash{nullptr};   ///< GAP-002: 삭제 시 휴지통으로 이동
     QCheckBox *m_showThumbnails{nullptr};
     QCheckBox *m_showHidden{nullptr};
 };

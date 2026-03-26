@@ -23,6 +23,7 @@
 #include "BreadcrumbBar.h"
 #include "FileSystemBrowser.h"
 #include "BookmarkManager.h"
+#include "SettingsManager.h"
 
 static const char *k_tabDragMime = "application/x-folderdir-tabdrag";
 
