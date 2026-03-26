@@ -3,6 +3,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QMenu>
+#include <QtWidgets/QActionGroup>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QDockWidget>
@@ -56,6 +57,10 @@ MainWindow::MainWindow(QWidget *parent)
     if (m_settingsManager->restoreSession()) {
         restoreSession();
     }
+
+    // Ensure pane[0] is highlighted as active from the start (UX-B07)
+    if (m_panes[0])
+        onActivePaneChanged(m_panes[0]);
 
     resize(1280, 800);
     setWindowTitle(tr("FolderDir"));
@@ -150,6 +155,28 @@ void MainWindow::setupMenuBar()
     layoutMenu->addAction(tr("4 Panes"),
                           this, &MainWindow::onLayout4Panes);
 
+    // ── View mode sub-menu (Details / List / Icons / Thumbnails) ──────────
+    QMenu *viewModeMenu = viewMenu->addMenu(tr("View &Mode"));
+    {
+        auto *grp = new QActionGroup(this);
+        grp->setExclusive(true);
+
+        auto makeViewAct = [&](const QString &label, ViewMode mode) {
+            auto *act = viewModeMenu->addAction(label);
+            act->setCheckable(true);
+            grp->addAction(act);
+            connect(act, &QAction::triggered, this, [this, mode]() {
+                onSetViewMode(mode);
+            });
+            return act;
+        };
+        m_actViewDetails   = makeViewAct(tr("&Details"),    ViewMode::Details);
+        m_actViewList      = makeViewAct(tr("&List"),       ViewMode::List);
+        m_actViewIcons     = makeViewAct(tr("&Icons"),      ViewMode::Icons);
+        m_actViewThumbnails = makeViewAct(tr("&Thumbnails"), ViewMode::Thumbnails);
+        m_actViewDetails->setChecked(true); // default
+    }
+
     viewMenu->addSeparator();
 
     m_actHidden = viewMenu->addAction(tr("Show &Hidden Files"));
@@ -221,11 +248,13 @@ void MainWindow::setupMenuBar()
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     helpMenu->addAction(tr("&About FolderDir"), this, [this]() {
         QMessageBox::about(this, tr("About FolderDir"),
-            tr("<b>FolderDir</b> v1.0.2<br>"
-               "A multi-pane file manager inspired by Q-Dir.<br>"
-               "Phase 5 features: breadcrumb bar, folder tree sidebar,<br>"
-               "F-key shortcuts, properties dialog, and more.<br>"
-               "Built with C++17 and Qt."));
+            tr("<b>FolderDir</b> v1.1.0<br>"
+               "A multi-pane file manager inspired by Q-Dir.<br><br>"
+               "<b>Features:</b> Breadcrumb bar · Folder tree sidebar · "
+               "Color coding · Async folder sizes · Tab drag &amp; drop · "
+               "F-key shortcuts (F3–F10) · Properties dialog · "
+               "Session restore · Preview panel<br><br>"
+               "Built with C++17 and Qt 6."));
     });
 }
 
@@ -269,6 +298,32 @@ void MainWindow::setupToolBar()
     m_toolBar->addAction(
         QIcon::fromTheme(QStringLiteral("system-search")), tr("Search"),
         this, &MainWindow::onOpenSearch);
+
+    auto *actRefresh = m_toolBar->addAction(
+        QIcon::fromTheme(QStringLiteral("view-refresh")), tr("Refresh (Ctrl+R)"),
+        this, [this]() { if (m_activePane) m_activePane->refresh(); });
+    actRefresh->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_R));
+
+    m_toolBar->addSeparator();
+
+    // Pane-count quick-switch buttons (1 / 2 / 3 / 4)
+    auto *actPane1 = m_toolBar->addAction(tr("1"), this, &MainWindow::onLayout1Pane);
+    actPane1->setToolTip(tr("1 Pane (Ctrl+F1)"));
+    actPane1->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F1));
+
+    auto *actPane2 = m_toolBar->addAction(tr("2"), this, &MainWindow::onLayout2PanesH);
+    actPane2->setToolTip(tr("2 Panes (Ctrl+F2)"));
+    actPane2->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F2));
+
+    auto *actPane3 = m_toolBar->addAction(tr("3"), this, &MainWindow::onLayout3Panes);
+    actPane3->setToolTip(tr("3 Panes (Ctrl+F3)"));
+    actPane3->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F3));
+
+    auto *actPane4 = m_toolBar->addAction(tr("4"), this, &MainWindow::onLayout4Panes);
+    actPane4->setToolTip(tr("4 Panes (Ctrl+F4)"));
+    actPane4->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F4));
+
+    m_toolBar->addSeparator();
     m_toolBar->addAction(
         QIcon::fromTheme(QStringLiteral("preferences-system")), tr("Settings"),
         this, &MainWindow::onOpenSettings);
@@ -363,11 +418,12 @@ void MainWindow::setupConnections()
                 m_previewPanel->clear();
         });
 
-        // Sync folder tree when active pane navigates
+        // Sync folder tree when active pane navigates, and refresh status bar item count
         connect(pane, &FolderPane::pathChanged, this, [this, pane](const QString &path) {
             if (pane != m_activePane) return;
             if (m_treeDock->isVisible())
                 m_treePanel->setActivePath(path);
+            updateStatusBar();
         });
     }
 }
@@ -591,8 +647,19 @@ void MainWindow::updateStatusBar()
     m_statusSelection->setText(
         tr("%n item(s) selected", "", sel.size()));
 
+    // Item count for current directory
+    const QString curPath = m_activePane->currentPath();
+    const QDir dir(curPath);
+    if (dir.exists()) {
+        const int itemCount = static_cast<int>(
+            dir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot).size());
+        m_statusItems->setText(tr("%n item(s)", "", itemCount));
+    } else {
+        m_statusItems->clear();
+    }
+
     // Disk free
-    const QStorageInfo si(m_activePane->currentPath());
+    const QStorageInfo si(curPath);
     if (si.isValid()) {
         const double freeGb = si.bytesFree() / 1.0e9;
         m_statusDisk->setText(tr("Free: %1 GB").arg(freeGb, 0, 'f', 1));
@@ -659,6 +726,16 @@ void MainWindow::onLayout2PanesH()  { applyLayout(2); }
 void MainWindow::onLayout2PanesV()  { applyLayout(2); }
 void MainWindow::onLayout3Panes()   { applyLayout(3); }
 void MainWindow::onLayout4Panes()   { applyLayout(4); }
+
+void MainWindow::onSetViewMode(ViewMode mode)
+{
+    m_currentViewMode = mode;
+    // Apply to all visible panes
+    for (auto *p : m_panes) {
+        if (p && p->isVisible() && p->currentBrowser())
+            p->currentBrowser()->setViewMode(mode);
+    }
+}
 
 void MainWindow::onToggleHidden()
 {

@@ -87,6 +87,8 @@ private:
     void addTabInternal(const QString &path);
     void syncAddressBar();
     void setActiveStyle();
+    /** Show close buttons only when there are ≥2 tabs (matches browser convention). */
+    void updateTabCloseButtons();
 
     DraggableTabBar *m_tabBar{nullptr};
     BreadcrumbBar   *m_addressBar{nullptr};

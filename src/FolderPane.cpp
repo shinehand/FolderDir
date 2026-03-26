@@ -137,20 +137,15 @@ void FolderPane::setupUi()
     m_layout->setContentsMargins(2, 2, 2, 2);
     m_layout->setSpacing(0);
 
-    // Breadcrumb address bar
-    m_addressBar = new BreadcrumbBar(this);
-    m_layout->addWidget(m_addressBar);
-
-    // Tab bar
+    // ── Tab bar row (FIRST — matches Q-Dir visual layout: tabs at top) ────
     m_tabBar = new DraggableTabBar(this, this);
-    m_tabBar->setTabsClosable(true);
+    m_tabBar->setTabsClosable(false);   // managed dynamically via updateTabCloseButtons()
     m_tabBar->setMovable(true);
     m_tabBar->setExpanding(false);
     m_tabBar->setDocumentMode(true);
     m_tabBar->setUsesScrollButtons(true);
-    m_layout->addWidget(m_tabBar);
 
-    // "+" button embedded in tab bar
+    // "+" new-tab button sits to the right of the tab bar
     QHBoxLayout *tabRow = new QHBoxLayout;
     tabRow->setContentsMargins(0, 0, 0, 0);
     tabRow->setSpacing(0);
@@ -159,16 +154,19 @@ void FolderPane::setupUi()
     auto *addTabBtn = new QPushButton(QStringLiteral("+"), this);
     addTabBtn->setFixedSize(24, 24);
     addTabBtn->setToolTip(tr("New Tab (Ctrl+T)"));
-    addTabBtn->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_T));
+    // Do NOT set a shortcut here — Ctrl+T is already handled by MainWindow
+    // to avoid per-pane shortcut conflicts.
     tabRow->addWidget(addTabBtn);
 
-    // Replace the single-widget add with the row
-    m_layout->removeWidget(m_tabBar);
     auto *tabWidget = new QWidget(this);
     tabWidget->setLayout(tabRow);
     m_layout->addWidget(tabWidget);
 
-    // Stacked widget (one page per tab)
+    // ── Breadcrumb address bar (SECOND — below the tab bar) ───────────────
+    m_addressBar = new BreadcrumbBar(this);
+    m_layout->addWidget(m_addressBar);
+
+    // ── Stacked file-browser content (THIRD) ─────────────────────────────
     m_stack = new QStackedWidget(this);
     m_layout->addWidget(m_stack, 1);
 
@@ -205,6 +203,7 @@ void FolderPane::addTabInternal(const QString &path)
     m_tabBar->addTab(label.isEmpty() ? path : label);
     m_tabBar->setTabToolTip(m_tabBar->count() - 1, path);
     m_tabBar->setCurrentIndex(m_tabBar->count() - 1);
+    updateTabCloseButtons();
 }
 
 FileSystemBrowser *FolderPane::browserAt(int index) const
@@ -242,6 +241,14 @@ void FolderPane::setActiveStyle()
     }
 }
 
+void FolderPane::updateTabCloseButtons()
+{
+    // Show close buttons only when there are 2 or more tabs, matching
+    // browser convention: a lone tab's close button would do nothing and
+    // is confusing.
+    m_tabBar->setTabsClosable(m_tabBar->count() > 1);
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 void FolderPane::navigateTo(const QString &path)
 {
@@ -261,6 +268,7 @@ void FolderPane::closeTab(int index)
     m_stack->removeWidget(w);
     w->deleteLater();
     m_tabBar->removeTab(index);
+    updateTabCloseButtons();
 }
 
 void FolderPane::closeCurrentTab()

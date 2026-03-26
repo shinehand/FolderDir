@@ -568,7 +568,74 @@ m_listView->setEditTriggers(QAbstractItemView::SelectedClicked |
 
 ---
 
-## 1. 프로젝트 개요 (Project Overview)
+### 0.8 기획팀 UX 심층 감사 결과 (UX Deep-Audit — 2026-03-26)
+
+> 작성 일자: 2026-03-26  
+> 작성 팀: 기획팀 PM · UX 디자이너  
+> 목적: 현재 구현 코드(`src/`)를 전수 분석하여 **사용자 체감 UX 관점**에서 누락·불일치·개선 가능 항목을 도출하고 즉시 수정할 것과 백로그에 추가할 것을 구분
+
+---
+
+#### 0.8.1 발견된 UX 문제 목록 (Findings)
+
+| # | 구분 | 위치 | 문제 내용 | 심각도 | 상태 |
+|---|------|------|-----------|--------|------|
+| UX-001 | **레이아웃 오류** | `FolderPane::setupUi()` | 탭바가 브레드크럼 아래에 배치됨. Q-Dir 및 §0.6.1 레이아웃 기준서에 따르면 탭이 맨 위, 브레드크럼이 그 아래 위치해야 함. | 🔴 High | ✅ 수정 완료 |
+| UX-002 | **상태바 미완성** | `MainWindow::updateStatusBar()` | `m_statusItems` 레이블이 생성되어 있으나 값이 채워지지 않음 — 현재 폴더의 항목 수가 상태바에 표시되지 않음 | 🔴 High | ✅ 수정 완료 |
+| UX-003 | **보기 모드 전환 불가** | `MainWindow::setupMenuBar()` | `FileSystemBrowser`에 `setViewMode()` API가 있고 `ViewMode` 열거형도 정의되어 있으나, View 메뉴에 보기 모드 전환 항목이 없어 사용자가 Details/List/Icons/Thumbnails를 변경할 방법이 없음 | 🔴 High | ✅ 수정 완료 |
+| UX-004 | **탭 닫기 버튼 항상 표시** | `FolderPane::setupUi()` | `setTabsClosable(true)` 고정 설정으로 탭이 1개일 때도 닫기 버튼이 표시됨. 클릭해도 아무 일이 없어 혼란을 유발. 브라우저 관례상 탭이 2개 이상일 때만 닫기 버튼 노출 | 🟠 Medium | ✅ 수정 완료 |
+| UX-005 | **주소창 오류 피드백 부족** | `BreadcrumbBar::onReturnPressed()` | 존재하지 않는 경로 입력 시 빨간 테두리만 표시, 오류 이유를 설명하는 툴팁/문구 없음. 사용자가 왜 실패했는지 알 수 없음 | 🟠 Medium | ✅ 수정 완료 |
+| UX-006 | **툴바 Refresh 버튼 없음** | `MainWindow::setupToolBar()` | 가장 자주 사용하는 작업 중 하나인 새로고침(Ctrl+R)이 툴바에 없음. 메뉴나 단축키를 모르면 접근 불가 | 🟠 Medium | ✅ 수정 완료 |
+| UX-007 | **패널 전환 툴바 버튼 없음** | `MainWindow::setupToolBar()` | 1/2/3/4 패널 전환이 View > Layout 서브메뉴에만 있어 접근이 깊음. Q-Dir은 툴바에 1~4 버튼을 제공함 | 🟠 Medium | ✅ 수정 완료 |
+| UX-008 | **About 다이얼로그 내용 시효 만료** | `MainWindow::setupMenuBar()` | "v1.0.2", "Phase 5 features"로 표기되어 있어 Sprint 8 이후 현재 상태를 반영하지 못함 | 🟡 Low | ✅ 수정 완료 |
+| UX-009 | **탭 Ctrl+T 단축키 충돌 가능성** | `FolderPane::setupUi()` | "+" 버튼에 `setShortcut(Ctrl+T)`가 설정되어 있어 각 패널의 숨겨진 QPushButton이 Ctrl+T를 소비할 수 있음. MainWindow에서 Ctrl+T 미처리 시 예상치 못한 동작 가능 | 🟠 Medium | ✅ 수정 완료 (shortcut 제거, MainWindow 핸들러로 일원화) |
+| UX-010 | **경로 변경 시 상태바 미갱신** | `MainWindow::setupConnections()` | `pathChanged` 시그널 연결에서 `updateStatusBar()`가 호출되지 않아 폴더 이동 시 `m_statusItems` 항목 수가 갱신되지 않음 | 🔴 High | ✅ 수정 완료 |
+
+---
+
+#### 0.8.2 즉시 수정 결과 요약 (Fixes Applied)
+
+| 수정 파일 | 수정 내용 |
+|-----------|-----------|
+| `src/FolderPane.cpp` | UX-001: 레이아웃 순서 변경 — tabWidget 먼저, m_addressBar 두 번째 |
+| `src/FolderPane.cpp` | UX-004: `setTabsClosable(false)` 기본값 + `updateTabCloseButtons()` 추가 — 탭 수에 따라 동적 제어 |
+| `src/FolderPane.cpp` | UX-009: "+" 버튼 `setShortcut` 제거 |
+| `src/FolderPane.h` | `updateTabCloseButtons()` 메서드 선언 추가 |
+| `src/BreadcrumbBar.cpp` | UX-005: 유효하지 않은 경로 입력 시 `setToolTip("Path does not exist: ...")` 추가; 성공 시 툴팁 초기화 |
+| `src/MainWindow.cpp` | UX-002 + UX-010: `updateStatusBar()`에 항목 수 계산 추가; `pathChanged` 시그널에서 `updateStatusBar()` 호출 |
+| `src/MainWindow.cpp` | UX-003: View 메뉴에 "View Mode" 서브메뉴 추가 (Details / List / Icons / Thumbnails, QActionGroup 배타 선택) |
+| `src/MainWindow.cpp` | UX-006: 툴바에 Refresh 버튼 추가 (Ctrl+R) |
+| `src/MainWindow.cpp` | UX-007: 툴바에 패널 전환 버튼 1/2/3/4 추가 (Ctrl+F1~F4 단축키) |
+| `src/MainWindow.cpp` | UX-008: About 다이얼로그 버전/기능 목록 업데이트 (v1.1.0, Sprint 8 반영) |
+| `src/MainWindow.h` | `onSetViewMode(ViewMode)` 슬롯, 뷰모드 액션 멤버, `#include QActionGroup` 추가 |
+
+---
+
+#### 0.8.3 백로그 — 추가 UX 개선 사항 (Backlog Items, Sprint 9+)
+
+> 이번 감사에서 발견됐으나 즉시 수정 범위를 벗어나는 항목 (별도 스프린트 계획 필요)
+
+| # | 항목 | 설명 | 권고 스프린트 |
+|---|------|------|---------------|
+| UX-B01 | **뷰 모드 퍼-패널 독립성** | 현재 View Mode 메뉴는 모든 패널에 동시 적용됨. Q-Dir처럼 패널별 독립 뷰 모드 선택이 필요 (각 패널 우클릭 컨텍스트 메뉴 또는 툴바에 드롭다운 추가) | Sprint 9 |
+| UX-B02 | **컬럼 표시/숨김 UI** | 상세 보기에서 이름·크기·유형·수정일 컬럼을 사용자가 헤더 우클릭으로 숨기거나 표시할 수 없음 | Sprint 9 |
+| UX-B03 | **탭에 파일 경로 아이콘** | 탭 레이블에 폴더 아이콘(QFileIconProvider)을 표시하면 다수 탭 구분이 용이 | Sprint 9 |
+| UX-B04 | **드래그 앤 드롭 시각 피드백** | 파일을 다른 패널로 드래그할 때 드롭 가능 영역 하이라이트가 없음. QDrag 픽스맵과 `dragMoveEvent` 스타일 추가 필요 | Sprint 9 |
+| UX-B05 | **북마크 사이드바 드래그 순서 변경** | `QListWidget` 기반 북마크 사이드바가 드래그 재정렬을 지원하지 않음 (`DragDropMode::InternalMove` 미설정) | Sprint 9 |
+| UX-B06 | **특수 폴더 빠른 접근** | 폴더 트리 상단에 Desktop·Documents·Downloads 고정 항목 추가 (`QStandardPaths` 활용) | Sprint 9 |
+| UX-B07 | **패널 전환 시 포커스 표시** | 활성 패널 border 색은 있으나 비활성 상태에서 어느 패널이 활성인지 초기 시작 시 명확하지 않음 — 초기 로드 시 `pane[0]->setActive(true)` 호출 필요 | ✅ 수정 완료 |
+| UX-B08 | **패널 1개 모드에서 레이아웃 버튼 상태** | 툴바의 패널 수 버튼이 현재 상태를 반영하는 시각적 활성 상태(checked/pressed)가 없음 | Sprint 9 |
+
+---
+
+#### 0.8.4 Sprint 9 추가 UX 작업 반영 (Updated Sprint 9 Scope)
+
+| 스프린트 | 담당 | 원래 작업 | 추가 UX 작업 |
+|---------|------|-----------|-------------|
+| Sprint 9 | C | 패널 동기화 · 패널 잠금/복제 | + UX-B01 (뷰 모드 퍼-패널) · UX-B07 (초기 활성 패널) |
+| Sprint 9 | B | (추가) | UX-B02 컬럼 UI · UX-B03 탭 아이콘 · UX-B04 DnD 피드백 · UX-B05 북마크 재정렬 · UX-B06 특수 폴더 |
+
+---
 
 | 항목 | 내용 |
 |------|------|

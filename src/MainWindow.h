@@ -2,6 +2,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
+#include <QtWidgets/QActionGroup>
 #include <QtGui/QAction>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QStatusBar>
@@ -9,6 +10,8 @@
 #include <QtWidgets/QDockWidget>
 #include <QtCore/QSettings>
 #include <array>
+
+#include "FileSystemBrowser.h"   // for ViewMode enum
 
 class FolderPane;
 class BookmarkManager;
@@ -69,6 +72,7 @@ private slots:
     void onTogglePreview();
     void onToggleBookmarkSidebar();
     void onToggleFolderTree();
+    void onSetViewMode(ViewMode mode); ///< Apply view mode to all visible panes
 
     // Tools menu
     void onOpenSearch();
@@ -144,7 +148,15 @@ private:
     QAction *m_actBookmarkSidebar{nullptr};
     QAction *m_actFolderTree{nullptr};
 
+    // View mode actions (exclusive group in View > View Mode sub-menu)
+    QAction *m_actViewDetails{nullptr};
+    QAction *m_actViewList{nullptr};
+    QAction *m_actViewIcons{nullptr};
+    QAction *m_actViewThumbnails{nullptr};
+    ViewMode m_currentViewMode{ViewMode::Details};
+
     // Managers
     BookmarkManager *m_bookmarkManager{nullptr};
     SettingsManager *m_settingsManager{nullptr};
 };
+
