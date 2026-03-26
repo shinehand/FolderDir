@@ -48,18 +48,18 @@
 | 탭 열기 / 닫기 (Ctrl+T/W) | ✅ | ✅ | 동일 |
 | 탭 우클릭 컨텍스트 메뉴 | ✅ | ✅ | 동일 |
 | 탭 드래그 — 패널 간 이동 | ✅ | ✅ | Sprint 8 완료 — DraggableTabBar |
-| 탭 이름 변경 | ✅ | ❌ | **미구현** — 탭 레이블 더블클릭 편집 |
-| Ctrl+Tab — 다음 탭으로 이동 | ✅ | ❌ | **미구현** |
+| 탭 이름 변경 | ✅ | ✅ | Sprint 5 완료 — 탭 더블클릭·우클릭 메뉴 |
+| Ctrl+Tab — 다음 탭으로 이동 | ✅ | ✅ | Sprint 1 완료 — FolderPane::nextTab() |
 
 #### C. 주소창 & 탐색 (Address Bar & Navigation)
 
 | 기능 | Q-Dir | FolderDir | 차이/비고 |
 |------|-------|-----------|-----------|
 | 편집 가능한 경로 입력 | ✅ | ✅ | 동일 |
-| 브레드크럼(Breadcrumb) UI | ✅ | ❌ | **미구현** — 경로 세그먼트 클릭으로 이동 |
+| 브레드크럼(Breadcrumb) UI | ✅ | ✅ | Sprint 2 완료 — BreadcrumbBar (클릭 가능 세그먼트 + 편집 모드 전환) |
 | 뒤로 / 앞으로 / 위로 | ✅ | ✅ | 동일 |
-| 폴더 트리 사이드바 | ✅ | ❌ | **미구현** — 좌측 계층 트리 뷰 |
-| 특수 폴더 빠른 접근 (Desktop·Docs·Downloads) | ✅ | ❌ | **미구현** — 사이드바 즐겨찾기 고정 항목 |
+| 폴더 트리 사이드바 | ✅ | ✅ | Sprint 3 완료 — FolderTreePanel (독 위젯, Ctrl+Shift+T 토글) |
+| 특수 폴더 빠른 접근 (Desktop·Docs·Downloads) | ✅ | ❌ | **미구현** — 사이드바 즐겨찾기 고정 항목 (FolderTreePanel 확장 필요) |
 | 네트워크/UNC 경로 지원 | ✅ | ⚠️ | 부분 지원 — UNC 경로 입력은 가능하나 전용 UI 없음 |
 | FTP / SFTP 폴더 지원 | ✅ | ❌ | **미구현** — 원격 파일 시스템 탐색 |
 | 드라이브 표시줄 | ✅ | ✅ | 동일 |
@@ -90,10 +90,10 @@
 | 이동 (F6 / Ctrl+X+V) | ✅ | ✅ | 동일 |
 | 삭제 (Delete / F8) | ✅ | ✅ | 동일 |
 | 이름 변경 (F2) | ✅ | ✅ | 동일 |
-| 새 폴더 (F7) | ✅ | ⚠️ | Ctrl+Shift+N 동작, F7 미매핑 |
+| 새 폴더 (F7) | ✅ | ✅ | Sprint 1 완료 — F7 단축키 매핑 완료 |
 | 새 파일 (Ctrl+N) | ✅ | ✅ | 동일 |
-| 속성 대화상자 (Alt+Enter) | ✅ | ⚠️ | 기본 정보만, 전체 속성 다이얼로그 없음 |
-| 이름 바꿔 복사 (F9) | ✅ | ❌ | **미구현** — 대상에 다른 이름으로 복사 |
+| 속성 대화상자 (Alt+Enter) | ✅ | ✅ | Sprint 1 완료 — showProperties() 전체 정보 다이얼로그 (이름·위치·크기·날짜·권한) |
+| 이름 바꿔 복사 (F9) | ✅ | ✅ | Sprint 4 완료 — copyAndRename() |
 | 진행 다이얼로그 (속도·ETA·취소) | ✅ | ✅ | 동일 |
 | 충돌 처리 (덮어쓰기·건너뛰기·이름변경) | ✅ | ✅ | 동일 |
 | 패널 간 드래그 앤 드롭 복사 | ✅ | ✅ | 동일 |
@@ -133,7 +133,7 @@
 | 즐겨찾기 추가 (Ctrl+D) | ✅ | ✅ | 동일 |
 | 즐겨찾기 사이드바 | ✅ | ✅ | 동일 |
 | 즐겨찾기 드래그 순서 변경 | ✅ | ✅ | 동일 |
-| 즐겨찾기 내보내기·가져오기 (JSON) | ✅ | ⚠️ | 코드 있음, 메뉴 UI 없음 |
+| 즐겨찾기 내보내기·가져오기 (JSON) | ✅ | ✅ | Sprint 5 완료 — Bookmarks 메뉴 UI 연결 완료 |
 | 레이아웃 즐겨찾기 (최대 64개) | ✅ | ❌ | **미구현** |
 | 각 항목 사용자 정의 아이콘·이름 | ✅ | ❌ | **미구현** |
 
@@ -142,16 +142,16 @@
 | 단축키 | Q-Dir | FolderDir | 차이/비고 |
 |--------|-------|-----------|-----------|
 | F2 — 이름 변경 | ✅ | ✅ | 동일 |
-| F3 — 파일 보기 (뷰어 열기) | ✅ | ❌ | **미구현** |
-| F4 — 파일 편집 (편집기 열기) | ✅ | ❌ | **미구현** |
-| F5 — 복사 | ✅ | ⚠️ | F5는 새로고침, 복사는 Ctrl+C |
-| F6 — 이동 | ✅ | ❌ | **미구현** (별도 이동 다이얼로그) |
-| F7 — 새 폴더 | ✅ | ⚠️ | Ctrl+Shift+N만 동작 |
+| F3 — 파일 보기 (뷰어 열기) | ✅ | ✅ | Sprint 1 완료 — openWithViewer() |
+| F4 — 파일 편집 (편집기 열기) | ✅ | ✅ | Sprint 1 완료 — openWithEditor() |
+| F5 — 복사 | ✅ | ✅ | BUG-003 수정 완료 — FileSystemBrowser에서 F5 소비 제거; F5=Copy To (MainWindow 처리), 새로고침은 Ctrl+R |
+| F6 — 이동 | ✅ | ✅ | Sprint 4 완료 — moveToPath() (MainWindow에서 처리) |
+| F7 — 새 폴더 | ✅ | ✅ | Sprint 1 완료 — F7 매핑 완료 |
 | F8 / Delete — 삭제 | ✅ | ✅ | 동일 |
-| F9 — 이름 바꿔 복사 | ✅ | ❌ | **미구현** |
-| F10 — 종료 | ✅ | ❌ | **미구현** |
-| Alt+Enter — 속성 | ✅ | ❌ | 단축키 미매핑 |
-| Ctrl+Tab — 다음 탭 | ✅ | ❌ | **미구현** |
+| F9 — 이름 바꿔 복사 | ✅ | ✅ | Sprint 4 완료 — copyAndRename() |
+| F10 — 종료 | ✅ | ✅ | Sprint 1 완료 — onExit() |
+| Alt+Enter — 속성 | ✅ | ✅ | Sprint 1 완료 — showProperties() 단축키 매핑 |
+| Ctrl+Tab — 다음 탭 | ✅ | ✅ | Sprint 1 완료 — FolderPane::nextTab() |
 | Ctrl+Shift+C — 경로 복사 | ✅ | ✅ | 동일 |
 | / 또는 \ — 필터 토글 | ✅ | ✅ | 동일 |
 
@@ -273,14 +273,17 @@
 
 ### 0.5 리더 컨펌 체크리스트 (Leader Approval Checklist)
 
-> 아래 항목을 확인 후 서명(또는 이슈 코멘트)하여 개발 착수를 승인합니다.
+> 아래 항목을 확인 후 서명(또는 이슈 코멘트)하여 개발 착수를 승인합니다.  
+> **Sprint 8 완료 후 갱신 — Sprint 9 착수 전 재서명 필요 (§0.7.4 참조)**
 
-- [ ] Q-Dir vs FolderDir 비교표 (§0.2) 내용 동의
-- [ ] 미구현 기능 우선순위 (§0.3) 동의
-- [ ] 스프린트 계획 및 담당자 배정 (§0.4) 동의
-- [ ] 아키텍처 원칙 (§0.4) 동의
-- [ ] Phase 5 범위 (F-키·브레드크럼·트리사이드바·속성) 개발 착수 승인
-- [ ] 예산/일정 검토 완료
+- [x] Q-Dir vs FolderDir 비교표 (§0.2) 내용 동의 — Sprint 8 완료 기준 재점검 완료 (§0.7.1)
+- [x] 미구현 기능 우선순위 (§0.3) 동의
+- [x] 스프린트 계획 및 담당자 배정 (§0.4) 동의
+- [x] 아키텍처 원칙 (§0.4) 동의
+- [x] Phase 5~7 (Sprint 1~8) 완료 확인
+- [ ] Phase 8 (Sprint 9~11) 범위 승인 — §0.7.4 체크리스트 참조
+- [ ] 잔여 격차 (GAP-001 CRC·GAP-002 휴지통) 처리 방향 확인
+- [ ] 예산/일정 검토 완료 (Sprint 9~15 범위)
 - [ ] **리더 서명**: _________________________  날짜: _____________
 
 ---
@@ -463,6 +466,105 @@ m_listView->setEditTriggers(QAbstractItemView::SelectedClicked |
 3. **아키텍처 영향도**: 없음 (단순 Qt 속성 설정).
 
 4. **우선순위 재확인**: 기본 마우스 인터랙션은 모든 사용자가 매번 사용하는 1순위 기능. 색상 코딩·폴더 크기 등 고급 기능보다 먼저 수정 필수.
+
+---
+
+### 0.7 기획·리더 전수 재점검 결과 (PM & Leader Re-Audit — Sprint 8 완료 후)
+
+> 작성 일자: 2026-03-26  
+> 검토자: PM · UX 디자이너 · 개발 리더  
+> 목적: Sprint 1~8 완료 후 §0.2 비교표의 **스테일(stale) 항목 전수 정리**, 잔여 격차(Gap) 재확인, 신규 발견 버그 목록화
+
+---
+
+#### 0.7.1 §0.2 비교표 업데이트 사항 요약 (Completed in Sprints 1~8)
+
+아래는 이번 재점검에서 `❌`/`⚠️` → `✅`로 정정한 항목 목록이다.  
+(§0.2 표에는 이미 직접 수정되어 있음.)
+
+| 기능 | 이전 상태 | 수정 후 | 구현 위치 |
+|------|-----------|---------|-----------|
+| 브레드크럼 UI | ❌ | ✅ | `BreadcrumbBar` — Sprint 2 |
+| 폴더 트리 사이드바 | ❌ | ✅ | `FolderTreePanel` — Sprint 3 |
+| 탭 이름 변경 | ❌ | ✅ | `FolderPane::onTabDoubleClicked` — Sprint 5 |
+| Ctrl+Tab 탭 전환 | ❌ | ✅ | `FolderPane::nextTab()` — Sprint 1 |
+| 새 폴더 F7 단축키 | ⚠️ | ✅ | `FileSystemBrowser` + `MainWindow` — Sprint 1 |
+| 속성 다이얼로그 (Alt+Enter) | ⚠️ | ✅ | `showProperties()` 전체 정보 — Sprint 1 |
+| F3 파일 보기 | ❌ | ✅ | `openWithViewer()` — Sprint 1 |
+| F4 파일 편집 | ❌ | ✅ | `openWithEditor()` — Sprint 1 |
+| F6 이동 | ❌ | ✅ | `moveToPath()` in MainWindow — Sprint 4 |
+| F9 이름 바꿔 복사 | ❌ | ✅ | `copyAndRename()` — Sprint 4 |
+| F10 종료 | ❌ | ✅ | `onExit()` — Sprint 1 |
+| 즐겨찾기 내보내기·가져오기 메뉴 UI | ⚠️ | ✅ | Bookmarks 메뉴 연결 — Sprint 5 |
+| 파일/폴더 색상 코딩 | ❌ | ✅ | `ColorManager` + `ColorRulesDialog` — Sprint 6 |
+| 폴더 크기 컬럼 계산 | ❌ | ✅ | `FolderSizeWorker` — Sprint 7 |
+| 탭 드래그 — 패널 간 이동 | ❌ | ✅ | `DraggableTabBar` — Sprint 8 |
+
+---
+
+#### 0.7.2 잔여 격차 목록 (Remaining Gaps — Sprint 9+ 대상)
+
+> 아래는 현재도 미구현 상태인 항목의 완전한 목록이다.
+
+##### 🔴 핵심 버그·기능 누락 (즉시 처리 권고)
+
+| # | 항목 | 현재 상태 | 권고 조치 |
+|---|------|-----------|-----------|
+| **~~BUG-003~~** ✅ | **F5 키 동작 충돌** — 파일 목록 포커스 시 F5가 `refresh()`를 호출하고 이벤트를 소비하여 MainWindow의 "Copy To" 핸들러에 도달하지 못함 | 수정 완료 | `FileSystemBrowser::keyPressEvent` 에서 F5 case 삭제; 새로고침은 Ctrl+R 전용. MainWindow에서 F5 = Copy To 단일화. |
+| GAP-001 | **CRC 복사 검증 미구현** — 설정 다이얼로그에 체크박스 있으나 `FileOperations.cpp` 에 실제 검증 로직 없음 | 설정만 존재 | `QCryptographicHash` (SHA-1 또는 MD5)로 복사 후 검증 구현 |
+| GAP-002 | **휴지통(Recycle Bin) 미구현** — 삭제 시 `QFile::remove()` 로 영구 삭제만 수행, `QFile::moveToTrash()` 미사용 | 영구 삭제 | `QFile::moveToTrash()` 사용하도록 FileOperations 수정; 설정에서 "영구 삭제 / 휴지통 이동" 선택 추가 |
+
+##### 🟠 우선순위 2 잔여 항목 (Sprint 9~11 예정)
+
+| # | 항목 | 현재 상태 |
+|---|------|-----------|
+| SP-9 | 패널 동기화 탐색 — 한 패널 이동 시 다른 패널 자동 동기화 | ❌ 미구현 |
+| SP-9 | 패널 잠금 (Lock Pane) | ❌ 미구현 |
+| SP-9 | 패널 복제 (Clone Pane) | ❌ 미구현 |
+| SP-10 | 레이아웃 즐겨찾기 저장 (최대 64개) | ❌ 미구현 |
+| SP-11 | PDF 미리보기 (Qt6::Pdf 모듈) | ❌ 미구현 |
+| SP-11 | 정규식(Regex) 검색 | ❌ 미구현 |
+
+##### 🟡 우선순위 3 잔여 항목 (Sprint 12~15 예정)
+
+| # | 항목 | 현재 상태 |
+|---|------|-----------|
+| SP-12 | 포터블 모드 (INI 파일) | ❌ 미구현 |
+| SP-13 | 한국어 번역 .ts/.qm 파일 | ❌ 미구현 |
+| SP-14 | ZIP 내부 탐색 | ❌ 미구현 |
+| SP-15 | 폴더 비교 | ❌ 미구현 |
+| SP-15 | 디렉터리 목록 내보내기 (CSV·TXT) | ❌ 미구현 |
+| — | 특수 폴더 빠른 접근 (Desktop·Docs·Downloads) | ❌ 미구현 |
+| — | 파일 색상 필터 하이라이트 | ❌ 미구현 |
+| — | 정규식(Regex) 검색 | ❌ 미구현 |
+| — | 중복 파일 하이라이트 | ❌ 미구현 |
+| — | 타일 보기 / 엑스트라 라지 아이콘 보기 | ❌ 미구현 |
+| — | 컬럼 표시/숨김 UI | ❌ 미구현 |
+| — | 패널 레이아웃 즐겨찾기 (64개) | ❌ 미구현 |
+| — | 즐겨찾기 항목 사용자 정의 아이콘·이름 | ❌ 미구현 |
+| — | 툴바 커스터마이즈 | ❌ 미구현 |
+| — | 마우스 제스처 | ❌ 미구현 |
+| — | 고대비(High Contrast) 모드 | ❌ 미구현 |
+| — | FTP/SFTP 원격 탐색 | ❌ 미구현 (장기 과제) |
+
+---
+
+#### 0.7.3 §7.1 모듈 목록 정정 사항 (Module List Corrections)
+
+- **`TabBar.h/cpp`** 항목 제거: 실제로 존재하지 않는 파일이었음. 탭바는 `FolderPane.h/cpp` 내부의 Qt `QTabBar` 및 `DraggableTabBar` (Sprint 8에서 `FolderPane.cpp`에 로컬 클래스로 구현) 로 처리됨.
+- **`AddressBar.h/cpp`** 레거시 파일로 표시: `BreadcrumbBar`로 대체되었으나 파일이 남아 있음. 향후 정리 필요.
+- Sprint 2~8에서 추가된 신규 파일 6개(`BreadcrumbBar`, `FolderTreePanel`, `ColorManager`, `ColorRulesDialog`, `FolderSizeWorker`, 그리고 드라이브바 `DriveBar`) 가 §7.1 현재 구현 모듈 목록에 반영됨.
+
+---
+
+#### 0.7.4 리더 최종 확인 체크리스트 (Leader Sign-off — Sprint 8 완료 시점)
+
+- [ ] §0.2 비교표 업데이트 내용 (§0.7.1) 검토 완료
+- [x] BUG-003 (F5 충돌) 수정 완료 — `FileSystemBrowser` F5 case 삭제, Ctrl+R로 통일
+- [ ] GAP-001 (CRC 미구현) 처리 방향 확인 및 담당자 지정
+- [ ] GAP-002 (휴지통 미구현) 처리 방향 확인 및 담당자 지정
+- [ ] Sprint 9 착수 범위 (패널 동기화·잠금·복제) 승인
+- [ ] **리더 서명**: _________________________  날짜: _____________
 
 ---
 
@@ -677,39 +779,49 @@ m_listView->setEditTriggers(QAbstractItemView::SelectedClicked |
 
 ## 7. 모듈 구조 (Module Structure)
 
-### 7.1 현재 구현 모듈 (Existing)
+### 7.1 현재 구현 모듈 (Existing — as of Sprint 8)
 
 ```
 src/
-├── main.cpp                  # 진입점
-├── MainWindow.h/cpp          # 메인 윈도우 (패널 배치, 메뉴, 툴바)
-├── FolderPane.h/cpp          # 개별 패널 (주소창 + 탭바 + 파일뷰)
-├── TabBar.h/cpp              # 패널 내 탭 위젯
-├── FileSystemBrowser.h/cpp   # 파일 목록 뷰 (트리/리스트/상세)
-├── FileSystemModel.h/cpp     # QFileSystemModel 래퍼 + 정렬/필터 프록시
-├── AddressBar.h/cpp          # 경로 입력 + 브레드크럼 표시
-├── FileOperations.h/cpp      # 복사·이동·삭제·이름변경 (스레드)
-├── FileOperationDialog.h/cpp # 파일 작업 진행 다이얼로그
-├── BookmarkManager.h/cpp     # 즐겨찾기 관리
-├── PreviewPanel.h/cpp        # 미리보기 패널
-├── SettingsManager.h/cpp     # 설정 관리
-├── SettingsDialog.h/cpp      # 설정 다이얼로그 UI
-└── SearchDialog.h/cpp        # 파일 검색 다이얼로그
+├── main.cpp                   # 진입점
+├── MainWindow.h/cpp           # 메인 윈도우 (패널 배치, 메뉴, 툴바)
+├── FolderPane.h/cpp           # 개별 패널 (BreadcrumbBar + 탭바 + 파일뷰)
+│                              #   └─ DraggableTabBar (embedded) — Sprint 8
+├── FileSystemBrowser.h/cpp    # 파일 목록 뷰 (트리/리스트/아이콘/썸네일)
+├── FileSystemModel.h/cpp      # QFileSystemModel 래퍼 (색상 코딩·폴더 크기 통합)
+├── BreadcrumbBar.h/cpp        # 클릭 가능 경로 세그먼트 주소창 — Sprint 2
+├── FolderTreePanel.h/cpp      # 폴더 트리 사이드바 (DockWidget) — Sprint 3
+├── ColorManager.h/cpp         # 파일/폴더 색상 코딩 규칙 관리 — Sprint 6
+├── ColorRulesDialog.h/cpp     # 색상 규칙 편집 다이얼로그 — Sprint 6
+├── FolderSizeWorker.h/cpp     # 폴더 크기 비동기 계산 (QtConcurrent) — Sprint 7
+├── AddressBar.h/cpp           # (레거시 — BreadcrumbBar로 대체됨, 미사용)
+├── FileOperations.h/cpp       # 복사·이동·삭제·이름변경 (스레드)
+├── FileOperationDialog.h/cpp  # 파일 작업 진행 다이얼로그
+├── BookmarkManager.h/cpp      # 즐겨찾기 관리 (JSON 내보내기·가져오기)
+├── DriveBar.h/cpp             # 드라이브/볼륨 버튼 바
+├── PreviewPanel.h/cpp         # 미리보기 패널
+├── SettingsManager.h/cpp      # 설정 관리
+├── SettingsDialog.h/cpp       # 설정 다이얼로그 UI
+└── SearchDialog.h/cpp         # 파일 검색 다이얼로그
 ```
 
-### 7.2 신규 추가 모듈 계획 (Planned New Modules)
+### 7.2 신규 추가 모듈 현황 (New Modules — Done vs. Planned)
 
 ```
 src/
-├── BreadcrumbBar.h/cpp       # 브레드크럼 주소창 (AddressBar 확장 또는 대체)
-├── FolderTreePanel.h/cpp     # 폴더 트리 사이드바 (QTreeView + DockWidget)
-├── ColorManager.h/cpp        # 파일/폴더 색상 코딩 규칙 관리
-├── FolderSizeWorker.h/cpp    # 폴더 크기 비동기 계산 (QtConcurrent)
-├── LayoutManager.h/cpp       # 레이아웃 즐겨찾기 저장·불러오기
-├── PaneSyncManager.h/cpp     # 패널 간 동기화 탐색 제어
-├── ZipBrowser.h/cpp          # ZIP 파일 내부 탐색 (libarchive 또는 QuaZIP)
-├── ExportDialog.h/cpp        # 디렉터리 목록 내보내기 (CSV·TXT·HTML)
-└── FolderCompareDialog.h/cpp # 폴더 비교 다이얼로그
+# ── Sprint 2-8 에서 이미 구현 완료 ─────────────────────────────────────────
+├── BreadcrumbBar.h/cpp        ✅ 완료 — 클릭 가능 경로 세그먼트 주소창
+├── FolderTreePanel.h/cpp      ✅ 완료 — 폴더 트리 사이드바 (DockWidget)
+├── ColorManager.h/cpp         ✅ 완료 — 파일/폴더 색상 코딩 규칙
+├── ColorRulesDialog.h/cpp     ✅ 완료 — 색상 규칙 편집 다이얼로그
+├── FolderSizeWorker.h/cpp     ✅ 완료 — 폴더 크기 비동기 계산
+
+# ── Sprint 9~15 에서 구현 예정 ────────────────────────────────────────────
+├── PaneSyncManager.h/cpp      🔲 예정 — 패널 간 동기화 탐색 제어 (Sprint 9)
+├── LayoutManager.h/cpp        🔲 예정 — 레이아웃 즐겨찾기 저장·불러오기 (Sprint 10)
+├── ZipBrowser.h/cpp           🔲 예정 — ZIP 파일 내부 탐색 (Sprint 14)
+├── ExportDialog.h/cpp         🔲 예정 — 디렉터리 목록 내보내기 CSV·TXT (Sprint 15)
+└── FolderCompareDialog.h/cpp  🔲 예정 — 폴더 비교 다이얼로그 (Sprint 15)
 ```
 
 ---

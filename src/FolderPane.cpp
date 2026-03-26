@@ -69,7 +69,9 @@ protected:
         }
 
         // Build MIME payload: "pane_hex|tab_index|base64(tab_path)"
-        // The path is base64-encoded so that '|' separators remain unambiguous.
+        // Format: three '|'-delimited fields.  pane_hex and tab_index are plain
+        // ASCII values; tab_path is base64-encoded so that any '|' characters
+        // inside the path do not break the field delimiter.
         const QString paneHex  = QString::number(
             reinterpret_cast<quintptr>(m_pane), 16);
         const QString tabPath  = m_pane->tabPaths().value(m_dragTabIndex);
@@ -77,7 +79,7 @@ protected:
                                + QLatin1Char('|')
                                + QString::number(m_dragTabIndex)
                                + QLatin1Char('|')
-                               + QString::fromLatin1(tabPath.toUtf8().toBase64());
+                               + QString::fromLatin1(tabPath.toUtf8().toBase64()); // base64 for '|' safety
 
         auto *mime = new QMimeData;
         mime->setData(QLatin1String(k_tabDragMime), payload.toUtf8());

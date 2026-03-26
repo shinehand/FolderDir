@@ -724,11 +724,10 @@ void FileSystemBrowser::keyPressEvent(QKeyEvent *event)
         event->accept();
         return;
     case Qt::Key_F5:
-        // F5 without modifiers = refresh (Ctrl+R is also supported)
-        // F5/F6 for copy/move are handled in MainWindow to use pane context
-        refresh();
-        event->accept();
-        return;
+        // BUG-003 fix: F5 is handled by MainWindow (Copy To dialog).
+        // Do NOT consume F5 here so it propagates to MainWindow::keyPressEvent.
+        // Use Ctrl+R for refresh instead.
+        break;
     case Qt::Key_R:
         if (event->modifiers() == Qt::ControlModifier) {
             refresh();
