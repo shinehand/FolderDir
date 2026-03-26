@@ -34,6 +34,10 @@ enum class FileOperationKind {
  *
  * Runs in a dedicated QThread.  Progress and conflict callbacks are
  * marshalled back to the GUI thread via Qt signals.
+ *
+ * Options:
+ *  - setUseTrash(true)          GAP-002: Delete → 휴지통으로 이동
+ *  - setVerifyChecksum(true)    GAP-001: Copy 완료 후 SHA-256 체크섬 검증
  */
 class FileOperation : public QObject
 {
@@ -53,6 +57,14 @@ public:
     QStringList sources() const { return m_sources; }
     QString destination() const { return m_destination; }
 
+    /** GAP-002: true이면 삭제 시 영구 삭제 대신 휴지통으로 이동. */
+    void setUseTrash(bool v) { m_useTrash = v; }
+    bool useTrash() const    { return m_useTrash; }
+
+    /** GAP-001: true이면 복사 완료 후 SHA-256 체크섬 비교 검증. */
+    void setVerifyChecksum(bool v) { m_verifyChecksum = v; }
+    bool verifyChecksum() const    { return m_verifyChecksum; }
+
     /** Called from GUI thread to resolve a conflict; unblocks the worker. */
     void resolveConflict(ConflictResolution resolution);
 
@@ -62,6 +74,8 @@ signals:
     void conflictDetected(const QString &src, const QString &dst);
     void operationFinished(bool success, const QString &errorMessage);
     void fileCompleted(const QString &path);
+    /** GAP-001: 체크섬 불일치 시 발생 (파일명 포함). */
+    void checksumMismatch(const QString &path);
 
 private slots:
     void run();
@@ -72,10 +86,14 @@ private:
     bool deleteRecursive(const QString &path);
     QString resolveDestPath(const QString &src) const;
     qint64 totalSize(const QStringList &paths) const;
+    static QByteArray fileHash(const QString &path);  ///< GAP-001: SHA-256 계산
 
     FileOperationKind m_kind;
     QStringList       m_sources;
     QString           m_destination;
+
+    bool m_useTrash{false};        ///< GAP-002
+    bool m_verifyChecksum{false};  ///< GAP-001
 
     QAtomicInt         m_cancelled{0};
     QMutex             m_conflictMutex;

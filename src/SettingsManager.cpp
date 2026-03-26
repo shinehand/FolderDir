@@ -88,6 +88,16 @@ void SettingsManager::setVerifyCopyChecksum(bool v)
     m_settings.setValue(QStringLiteral("fileops/verifyChecksum"), v);
 }
 
+bool SettingsManager::useTrash() const
+{
+    // 기본값 true — 삭제 시 휴지통으로 이동 (GAP-002)
+    return m_settings.value(QStringLiteral("fileops/useTrash"), true).toBool();
+}
+void SettingsManager::setUseTrash(bool v)
+{
+    m_settings.setValue(QStringLiteral("fileops/useTrash"), v);
+}
+
 bool SettingsManager::showThumbnails() const
 {
     return m_settings.value(QStringLiteral("view/thumbnails"), true).toBool();
