@@ -19,7 +19,7 @@ void FolderSizeWorker::requestSize(const QString &path)
         m_pending.insert(path);
     }
 
-    auto *watcher = new QFutureWatcher<qint64>(nullptr);
+    auto *watcher = new QFutureWatcher<qint64>(this);
     connect(watcher, &QFutureWatcher<qint64>::finished,
             this, [this, watcher, path]() {
         const qint64 size = watcher->result();

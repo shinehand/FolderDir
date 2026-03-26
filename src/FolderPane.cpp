@@ -68,7 +68,8 @@ protected:
             return;
         }
 
-        // Build MIME payload: "pane_hex|tab_index|tab_path"
+        // Build MIME payload: "pane_hex|tab_index|base64(tab_path)"
+        // The path is base64-encoded so that '|' separators remain unambiguous.
         const QString paneHex  = QString::number(
             reinterpret_cast<quintptr>(m_pane), 16);
         const QString tabPath  = m_pane->tabPaths().value(m_dragTabIndex);
@@ -76,7 +77,7 @@ protected:
                                + QLatin1Char('|')
                                + QString::number(m_dragTabIndex)
                                + QLatin1Char('|')
-                               + tabPath;
+                               + QString::fromLatin1(tabPath.toUtf8().toBase64());
 
         auto *mime = new QMimeData;
         mime->setData(QLatin1String(k_tabDragMime), payload.toUtf8());
@@ -461,7 +462,9 @@ void FolderPane::dropEvent(QDropEvent *event)
 
     if (sourcePane == this) return; // same-pane moves handled by QTabBar
 
-    const QString tabPath = parts.mid(2).join(QLatin1Char('|')); // path may contain '|'
+    // Path was base64-encoded in DraggableTabBar to keep the '|' separator unambiguous
+    const QString tabPath = QString::fromUtf8(
+        QByteArray::fromBase64(parts.at(2).toLatin1()));
 
     newTab(tabPath);
     // Signal MoveAction so the source removes the tab

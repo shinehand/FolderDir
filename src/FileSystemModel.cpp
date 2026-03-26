@@ -16,13 +16,10 @@ FileSystemModel::FileSystemModel(QObject *parent)
     connect(m_sizeWorker, &FolderSizeWorker::sizeReady,
             this, &FileSystemModel::onFolderSizeReady);
 
-    // Refresh view when colour rules change
+    // Refresh view when colour rules change.  layoutChanged() is the correct
+    // signal to force all visible items to repaint their decorations.
     connect(ColorManager::instance(), &ColorManager::rulesChanged,
-            this, [this]() {
-        // Notify the entire model so all visible items repaint their colours
-        emit dataChanged(QModelIndex{}, QModelIndex{},
-                         {Qt::BackgroundRole, Qt::ForegroundRole});
-    });
+            this, [this]() { emit layoutChanged(); });
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
