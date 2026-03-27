@@ -444,12 +444,22 @@ int FolderPane::currentTabIndex() const
 
 void FolderPane::restoreTabs(const QStringList &paths, int activeIndex)
 {
-    // Remove existing tabs
-    while (m_tabBar->count() > 0) closeTab(0);
+    if (paths.isEmpty()) return;
 
-    for (const QString &p : paths) {
-        if (!p.isEmpty()) addTabInternal(p);
+    // closeTab() refuses to close the very last tab, so close down to 1 tab first.
+    while (m_tabBar->count() > 1)
+        closeTab(m_tabBar->count() - 1);
+
+    // Reuse the single remaining tab for the first restored path.
+    if (auto *b = currentBrowser(); b && !paths.first().isEmpty())
+        b->setPath(paths.first());
+
+    // Add the remaining paths as new tabs.
+    for (int i = 1; i < paths.size(); ++i) {
+        if (!paths.at(i).isEmpty())
+            addTabInternal(paths.at(i));
     }
+
     if (activeIndex >= 0 && activeIndex < m_tabBar->count())
         m_tabBar->setCurrentIndex(activeIndex);
 }
