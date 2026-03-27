@@ -43,6 +43,11 @@ public:
     bool isActive() const { return m_active; }
     void setActive(bool active);
 
+    /** Returns true when navigation is locked for this pane (SP-9). */
+    bool isLocked() const { return m_locked; }
+    /** Lock or unlock navigation for this pane (SP-9). */
+    void setLocked(bool locked);
+
     /** Get / set the view mode for this pane (UX-B01). */
     ViewMode viewMode() const { return m_viewMode; }
     void setViewMode(ViewMode mode);
@@ -112,6 +117,7 @@ private:
     BookmarkManager   *m_bookmarkManager{nullptr};
     SettingsManager   *m_settingsMgr{nullptr};  ///< injected for GAP-001/002
     bool     m_active{false};
+    bool     m_locked{false};    ///< SP-9: when true, navigateTo() is a no-op
     ViewMode m_viewMode{ViewMode::Details};   ///< Per-pane view mode (UX-B01)
 
     /** When true the pane is acting as a file-drop target; renders highlight border. */
