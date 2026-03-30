@@ -21,6 +21,8 @@
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QProcess>
+#include <QtGui/QScreen>
+#include <QtGui/QGuiApplication>
 
 #include "FolderPane.h"
 #include "BookmarkManager.h"
@@ -58,9 +60,12 @@ MainWindow::MainWindow(QWidget *parent)
         restoreSession();
     }
 
-    // Ensure pane[0] is highlighted as active from the start (UX-B07)
+    // Ensure pane[0] is highlighted as active from the start (UX-B07).
+    // onActivePaneChanged() has an early-exit guard (m_activePane == pane) that
+    // would be triggered here because setupUi() already set m_activePane = m_panes[0].
+    // Call setActive() directly to guarantee the initial active styling is applied.
     if (m_panes[0])
-        onActivePaneChanged(m_panes[0]);
+        m_panes[0]->setActive(true);
 
     resize(1280, 800);
     setWindowTitle(tr("FolderDir"));
@@ -574,7 +579,29 @@ void MainWindow::restoreSession()
     s->beginGroup(QStringLiteral("Session"));
 
     const QByteArray geo = s->value(QStringLiteral("geometry")).toByteArray();
-    if (!geo.isEmpty()) restoreGeometry(geo);
+    if (!geo.isEmpty()) {
+        restoreGeometry(geo);
+
+        // Guard against a saved geometry that is entirely off-screen (e.g. the
+        // window was on a monitor that is no longer connected).  If the restored
+        // frame rect does not intersect any currently-available screen geometry,
+        // move the window to the centre of the primary screen.
+        const QRect frame = frameGeometry();
+        bool onScreen = false;
+        for (const QScreen *scr : QGuiApplication::screens()) {
+            if (scr->availableGeometry().intersects(frame)) {
+                onScreen = true;
+                break;
+            }
+        }
+        if (!onScreen) {
+            if (const QScreen *primary = QGuiApplication::primaryScreen()) {
+                const QRect avail = primary->availableGeometry();
+                move(avail.x() + (avail.width()  - width())  / 2,
+                     avail.y() + (avail.height() - height()) / 2);
+            }
+        }
+    }
 
     const QByteArray state = s->value(QStringLiteral("state")).toByteArray();
     if (!state.isEmpty()) restoreState(state);
