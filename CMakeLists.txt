@@ -54,6 +54,7 @@ set(SOURCES
     src/ColorManager.cpp
     src/ColorRulesDialog.cpp
     src/FolderSizeWorker.cpp
+    src/LayoutManager.cpp
 )
 
 set(HEADERS
@@ -75,6 +76,7 @@ set(HEADERS
     src/ColorManager.h
     src/ColorRulesDialog.h
     src/FolderSizeWorker.h
+    src/LayoutManager.h
 )
 
 if(WIN32)

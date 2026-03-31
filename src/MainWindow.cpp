@@ -34,6 +34,7 @@
 #include "FileSystemBrowser.h"
 #include "FolderTreePanel.h"
 #include "ColorRulesDialog.h"
+#include "LayoutManager.h"
 
 // ──────────────────────────────────────────────────────────────────────────────
 MainWindow::MainWindow(QWidget *parent)
@@ -41,6 +42,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     m_bookmarkManager = new BookmarkManager(this);
     m_settingsManager = new SettingsManager(this);
+    m_layoutManager   = new LayoutManager(m_settingsManager->raw(), this);
 
     m_settingsManager->applyTheme();
 
@@ -216,6 +218,18 @@ void MainWindow::setupMenuBar()
                          QKeySequence(Qt::CTRL | Qt::Key_F));
     toolsMenu->addAction(tr("Open &Terminal"), this, &MainWindow::onOpenTerminal);
     toolsMenu->addAction(tr("&Colour Rules…"), this, &MainWindow::onOpenColorRules);
+    toolsMenu->addSeparator();
+
+    // SP-10: Layout presets sub-menu
+    m_layoutPresetsMenu = toolsMenu->addMenu(tr("&Layout Presets"));
+    m_layoutPresetsMenu->addAction(
+        tr("&Save Current Layout…"), this, &MainWindow::onSaveLayoutPreset,
+        QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+    m_layoutPresetsMenu->addSeparator();
+    rebuildLayoutPresetsMenu();
+    connect(m_layoutManager, &LayoutManager::presetsChanged,
+            this, &MainWindow::rebuildLayoutPresetsMenu);
+
     toolsMenu->addSeparator();
     toolsMenu->addAction(tr("&Settings…"), this, &MainWindow::onOpenSettings);
 
@@ -1058,5 +1072,100 @@ void MainWindow::onClonePane()
     for (int i = 0; i < m_paneCount; ++i) {
         if (m_panes[i] && m_panes[i] != src && m_panes[i]->isVisible())
             m_panes[i]->navigateTo(path);
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// SP-10: Layout presets
+// ──────────────────────────────────────────────────────────────────────────────
+
+void MainWindow::onSaveLayoutPreset()
+{
+    bool ok = false;
+    const QString name = QInputDialog::getText(
+        this, tr("Save Layout Preset"),
+        tr("Preset name (max %1 presets):").arg(LayoutManager::MaxPresets),
+        QLineEdit::Normal, QString(), &ok);
+
+    if (!ok || name.trimmed().isEmpty()) return;
+    const QString trimmed = name.trimmed();
+
+    if (m_layoutManager->exists(trimmed)) {
+        const auto btn = QMessageBox::question(
+            this, tr("Overwrite Preset"),
+            tr("A preset named \"%1\" already exists. Overwrite?").arg(trimmed));
+        if (btn != QMessageBox::Yes) return;
+    }
+
+    LayoutPreset preset;
+    preset.name      = trimmed;
+    preset.paneCount = m_paneCount;
+    for (int i = 0; i < 4; ++i) {
+        if (m_panes[i]) {
+            preset.panes[i].tabs       = m_panes[i]->tabPaths();
+            preset.panes[i].currentTab = m_panes[i]->currentTabIndex();
+        }
+    }
+
+    if (!m_layoutManager->save(preset)) {
+        QMessageBox::warning(this, tr("Layout Presets"),
+                             tr("Could not save preset — maximum of %1 presets reached.")
+                             .arg(LayoutManager::MaxPresets));
+    }
+}
+
+void MainWindow::onLoadLayoutPreset(const QString &name)
+{
+    const LayoutPreset preset = m_layoutManager->find(name);
+    if (!preset.isValid()) return;
+
+    applyLayout(preset.paneCount);
+
+    for (int i = 0; i < 4 && i < preset.paneCount; ++i) {
+        if (!m_panes[i]) continue;
+        const QStringList &tabs = preset.panes[i].tabs;
+        if (!tabs.isEmpty())
+            m_panes[i]->restoreTabs(tabs, preset.panes[i].currentTab);
+    }
+}
+
+void MainWindow::onDeleteLayoutPreset(const QString &name)
+{
+    const auto btn = QMessageBox::question(
+        this, tr("Delete Preset"),
+        tr("Delete the layout preset \"%1\"?").arg(name));
+    if (btn == QMessageBox::Yes)
+        m_layoutManager->remove(name);
+}
+
+void MainWindow::rebuildLayoutPresetsMenu()
+{
+    if (!m_layoutPresetsMenu) return;
+
+    // Remove only the dynamic preset actions (those with object name "lp_dynamic")
+    const auto actions = m_layoutPresetsMenu->actions();
+    for (QAction *a : actions) {
+        if (a->objectName() == QLatin1String("lp_dynamic")) {
+            m_layoutPresetsMenu->removeAction(a);
+            delete a;
+        }
+    }
+
+    const QStringList names = m_layoutManager->names();
+    if (names.isEmpty()) return;
+
+    for (const QString &n : names) {
+        QAction *loadAct = m_layoutPresetsMenu->addAction(
+            QIcon::fromTheme(QStringLiteral("view-restore")), n,
+            [this, n]() { onLoadLayoutPreset(n); });
+        loadAct->setObjectName(QStringLiteral("lp_dynamic"));
+
+        // Right-click / context-menu delete via the action itself is not
+        // straightforward in a QMenu; we instead provide a Delete… entry
+        // directly after each preset.
+        QAction *delAct = m_layoutPresetsMenu->addAction(
+            tr("Delete \"%1\"…").arg(n),
+            [this, n]() { onDeleteLayoutPreset(n); });
+        delAct->setObjectName(QStringLiteral("lp_dynamic"));
     }
 }

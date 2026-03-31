@@ -261,8 +261,8 @@
 | ~~Sprint 6~~ ✅ | B | 파일/폴더 색상 코딩 (ColorManager 신규 모듈) |
 | ~~Sprint 7~~ ✅ | A | 폴더 크기 컬럼 (백그라운드 스레드 계산) |
 | ~~Sprint 8~~ ✅ | B | 탭 드래그·패널 간 이동 |
-| Sprint 9 | C | 패널 동기화 · 패널 잠금/복제 |
-| Sprint 10 | C | 레이아웃 즐겨찾기 저장 (최대 64개) |
+| ~~Sprint 9~~ ✅ | C | 패널 동기화 · 패널 잠금/복제 · GAP-001 CRC · GAP-002 휴지통 |
+| ~~Sprint 10~~ ✅ | C | 레이아웃 즐겨찾기 저장 (최대 10개, `LayoutManager`) |
 | Sprint 11 | C | PDF 미리보기 (Qt6::Pdf 모듈) |
 | Sprint 12 | C | 포터블 모드 (INI 파일 옵션) |
 | Sprint 13 | C | 한국어 번역 .ts/.qm 파일 생성 |
@@ -658,6 +658,86 @@ m_listView->setEditTriggers(QAbstractItemView::SelectedClicked |
 
 ---
 
+### 0.9 기획·개발팀 재편 및 Sprint 10 착수 (Team Re-formation & Sprint 10 — 2026-03-31)
+
+> 작성 일자: 2026-03-31  
+> 작성 팀: 기획팀 (PM · UX 디자이너 · BA · QA) + 개발팀 (리더 · 개발자 A/B/C)  
+> 참고 문서: `docs/team.md` (팀 구성·협업 프로세스 신규 명문화)
+
+---
+
+#### 0.9.1 기획팀 현황 감사 (Planning Team Audit — Sprint 9 이후)
+
+Sprint 9 완료 기준 전수 재점검 결과:
+
+| 구분 | 항목 | 이전 상태 | 현재 상태 |
+|------|------|-----------|-----------|
+| SP-9 | 패널 동기화 탐색 | ❌ | ✅ `m_paneSyncEnabled` + `onTogglePaneSync()` — `MainWindow` |
+| SP-9 | 패널 잠금 (Lock Pane) | ❌ | ✅ `FolderPane::setLocked()` + `onLockPane()` — `MainWindow` |
+| SP-9 | 패널 복제 (Clone Pane) | ❌ | ✅ `onClonePane()` — `MainWindow` |
+| GAP-001 | CRC 복사 검증 | ⚠️ 설정만 | ✅ `FileOperation::fileHash()` (SHA-256) + `m_verifyChecksum` |
+| GAP-002 | 휴지통 이동 | ⚠️ 영구삭제만 | ✅ `QFile::moveToTrash()` + `m_useTrash` — `FileOperations.cpp` |
+| UX-B01~B08 | UX 백로그 전체 | 부분 | ✅ Sprint 9에서 전 항목 완료 |
+
+##### 기획팀 발견 신규 문제 (New Issues — Sprint 9 이후)
+
+| ID | 항목 | 심각도 | 설명 |
+|----|------|--------|------|
+| UX-C01 | **레이아웃 프리셋 저장 UI 없음** | 🟠 High | 패널 수·경로 조합을 자주 바꾸는 사용자가 매번 수동 재구성해야 함. "즐겨찾기 레이아웃" 저장/불러오기 기능 요청 다수. |
+| UX-C02 | **레이아웃 메뉴 반응성** | 🟡 Medium | 레이아웃 프리셋 메뉴가 동적으로 갱신되어야 함 (저장 즉시 메뉴에 반영). |
+
+#### 0.9.2 개발팀 회의 결과 (Dev Team Decision — Sprint 10)
+
+> 회의 일자: 2026-03-31  
+> 참여: 개발 리더 · 개발자 C (Architecture)
+
+**Sprint 10 목표**: `LayoutManager` 신규 모듈 구현 — 레이아웃 즐겨찾기 저장/불러오기 (최대 10개 프리셋)
+
+##### 아키텍처 결정
+
+1. `LayoutPreset` 구조체: 이름·패널 수·패널별 탭 경로 목록 저장
+2. `LayoutManager` 클래스: `QSettings` 의 `Layouts` 그룹에 영속화; `presetsChanged()` 시그널로 메뉴 동적 갱신
+3. `MainWindow` 통합: Tools > Layout Presets 서브메뉴, `Ctrl+Shift+S` 단축키로 저장
+4. 기존 세션 저장(`saveSession()`)과 별도 관리하여 충돌 방지
+
+#### 0.9.3 Sprint 10 구현 내역 (Sprint 10 Implementation)
+
+##### 신규 파일
+
+| 파일 | 내용 |
+|------|------|
+| `src/LayoutManager.h` | `LayoutPreset` 구조체 + `LayoutManager` 클래스 선언 (최대 10 프리셋) |
+| `src/LayoutManager.cpp` | `loadAll()` / `saveAll()` / `save()` / `remove()` / `find()` 구현 |
+| `docs/team.md` | 기획팀·개발팀 구성, 역할·책임, 협업 프로세스 명문화 |
+
+##### 수정 파일
+
+| 파일 | 수정 내용 |
+|------|-----------|
+| `CMakeLists.txt` | `LayoutManager.h/cpp` SOURCES·HEADERS 목록에 추가 |
+| `src/MainWindow.h` | `LayoutManager *m_layoutManager`, `QMenu *m_layoutPresetsMenu` 멤버 추가; SP-10 슬롯 4개 선언 |
+| `src/MainWindow.cpp` | `LayoutManager` 인스턴스 생성; Tools 메뉴에 "Layout Presets" 서브메뉴 추가; `onSaveLayoutPreset()` / `onLoadLayoutPreset()` / `onDeleteLayoutPreset()` / `rebuildLayoutPresetsMenu()` 구현 |
+
+##### 사용자 흐름 (User Story)
+
+1. 사용자가 4패널에서 각 패널에 자주 쓰는 폴더를 열어 놓은 상태
+2. **Tools > Layout Presets > Save Current Layout…** 클릭 (또는 `Ctrl+Shift+S`)
+3. 이름 입력 다이얼로그 → "Work Setup" 입력 → OK
+4. 메뉴에 "Work Setup" 항목 즉시 추가됨
+5. 패널 배치를 바꾼 후 **Tools > Layout Presets > Work Setup** 클릭 → 저장된 경로·패널 수 복원
+6. "Delete" 항목으로 불필요한 프리셋 삭제 가능
+
+#### 0.9.4 리더 최종 확인 체크리스트 (Leader Sign-off — Sprint 10)
+
+- [x] Sprint 9 완료 확인 (패널 동기화·잠금·복제, UX 백로그 전체)
+- [x] GAP-001 (CRC) / GAP-002 (휴지통) 완료 확인
+- [x] Sprint 10 `LayoutManager` 구현 완료
+- [x] `docs/team.md` 팀 구성 문서 신규 작성
+- [ ] Sprint 11 착수 범위 (PDF 미리보기·정규식 검색) 승인
+- [ ] **리더 서명**: _________________________  날짜: _____________
+
+---
+
 | 항목 | 내용 |
 |------|------|
 | 프로젝트명 | FolderDir |
@@ -897,16 +977,15 @@ src/
 
 ```
 src/
-# ── Sprint 2-8 에서 이미 구현 완료 ─────────────────────────────────────────
+# ── Sprint 2-9 에서 이미 구현 완료 ─────────────────────────────────────────
 ├── BreadcrumbBar.h/cpp        ✅ 완료 — 클릭 가능 경로 세그먼트 주소창
 ├── FolderTreePanel.h/cpp      ✅ 완료 — 폴더 트리 사이드바 (DockWidget)
 ├── ColorManager.h/cpp         ✅ 완료 — 파일/폴더 색상 코딩 규칙
 ├── ColorRulesDialog.h/cpp     ✅ 완료 — 색상 규칙 편집 다이얼로그
 ├── FolderSizeWorker.h/cpp     ✅ 완료 — 폴더 크기 비동기 계산
+├── LayoutManager.h/cpp        ✅ 완료 — 레이아웃 즐겨찾기 저장·불러오기 (Sprint 10)
 
-# ── Sprint 9~15 에서 구현 예정 ────────────────────────────────────────────
-├── PaneSyncManager.h/cpp      🔲 예정 — 패널 간 동기화 탐색 제어 (Sprint 9)
-├── LayoutManager.h/cpp        🔲 예정 — 레이아웃 즐겨찾기 저장·불러오기 (Sprint 10)
+# ── Sprint 11~15 에서 구현 예정 ──────────────────────────────────────────
 ├── ZipBrowser.h/cpp           🔲 예정 — ZIP 파일 내부 탐색 (Sprint 14)
 ├── ExportDialog.h/cpp         🔲 예정 — 디렉터리 목록 내보내기 CSV·TXT (Sprint 15)
 └── FolderCompareDialog.h/cpp  🔲 예정 — 폴더 비교 다이얼로그 (Sprint 15)

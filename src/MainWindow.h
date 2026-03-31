@@ -9,6 +9,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QListWidget>
+#include <QtWidgets/QMenu>
 #include <QtCore/QSettings>
 #include <array>
 
@@ -21,6 +22,7 @@ class DriveBar;
 class SearchDialog;
 class PreviewPanel;
 class FolderTreePanel;
+class LayoutManager;
 
 /**
  * @brief MainWindow — top-level application window.
@@ -79,6 +81,12 @@ private slots:
     void onTogglePaneSync();    ///< Toggle directory-sync across all visible panes
     void onLockPane();          ///< Lock / unlock the active pane (prevent navigation)
     void onClonePane();         ///< Clone active pane's current path to other panes
+
+    // SP-10: Layout presets
+    void onSaveLayoutPreset();  ///< Prompt user for a name and save current layout
+    void onLoadLayoutPreset(const QString &name); ///< Restore a saved layout preset
+    void onDeleteLayoutPreset(const QString &name); ///< Remove a saved preset
+    void rebuildLayoutPresetsMenu(); ///< Rebuild the dynamic presets sub-menu
 
     // Tools menu
     void onOpenSearch();
@@ -181,5 +189,9 @@ private:
     // Managers
     BookmarkManager *m_bookmarkManager{nullptr};
     SettingsManager *m_settingsManager{nullptr};
+    LayoutManager   *m_layoutManager{nullptr};   ///< SP-10: layout presets
+
+    // SP-10: layout presets menu (rebuilt whenever presets change)
+    QMenu *m_layoutPresetsMenu{nullptr};
 };
 
