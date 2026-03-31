@@ -3,7 +3,13 @@ name: Build & Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - '*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name to build and release (e.g. buildTest, v1.4.1). Must be an existing tag.'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -17,6 +23,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag_name || github.ref }}
 
       - name: Install Qt 6
         uses: jurplel/install-qt-action@v4
@@ -62,6 +70,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag_name || github.ref }}
 
       - name: Install dependencies
         run: |
@@ -98,6 +108,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag_name || github.ref }}
 
       - name: Install Qt 6
         uses: jurplel/install-qt-action@v4
@@ -134,32 +146,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows artifact
-        uses: actions/download-artifact@v4.1.3
+        uses: actions/download-artifact@v4
         with:
           name: FolderDir-windows
 
       - name: Download Linux artifact
-        uses: actions/download-artifact@v4.1.3
+        uses: actions/download-artifact@v4
         with:
           name: FolderDir-linux
 
       - name: Download macOS artifact
-        uses: actions/download-artifact@v4.1.3
+        uses: actions/download-artifact@v4
         with:
           name: FolderDir-macos
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.6.1
         with:
-          name: FolderDir ${{ github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: FolderDir ${{ github.event.inputs.tag_name || github.ref_name }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(github.event.inputs.tag_name || github.ref_name, '-') }}
           files: |
             FolderDir-windows.zip
             FolderDir-linux.tar.gz
             FolderDir-macos.dmg
           body: |
-            ## FolderDir ${{ github.ref_name }}
+            ## FolderDir ${{ github.event.inputs.tag_name || github.ref_name }}
 
             ### Downloads
 
