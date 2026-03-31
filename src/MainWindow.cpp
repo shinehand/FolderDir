@@ -8,12 +8,12 @@
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QListWidget>
-#include <QtWidgets/QSplitter>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QToolButton>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QCloseEvent>
 #include <QtCore/QSettings>
@@ -25,6 +25,7 @@
 #include <QtGui/QGuiApplication>
 
 #include "FolderPane.h"
+#include "WorkspaceWidget.h"
 #include "BookmarkManager.h"
 #include "SettingsManager.h"
 #include "DriveBar.h"
@@ -53,21 +54,21 @@ MainWindow::MainWindow(QWidget *parent)
     setupDockWidgets();
     setupStatusBar();
 
-    const int panes = m_settingsManager->paneCount();
-    applyLayout(panes);
-
-    setupConnections();
-
     if (m_settingsManager->restoreSession()) {
         restoreSession();
+    } else {
+        // No saved session: default to 1-pane layout in the initial workspace
+        if (activeWorkspace())
+            activeWorkspace()->applyLayout(m_settingsManager->paneCount());
     }
 
-    // Ensure pane[0] is highlighted as active from the start (UX-B07).
-    // onActivePaneChanged() has an early-exit guard (m_activePane == pane) that
-    // would be triggered here because setupUi() already set m_activePane = m_panes[0].
-    // Call setActive() directly to guarantee the initial active styling is applied.
-    if (m_panes[0])
-        m_panes[0]->setActive(true);
+    // Ensure pane[0] of the first workspace is active
+    if (activeWorkspace() && activeWorkspace()->pane(0)) {
+        activeWorkspace()->pane(0)->setActive(true);
+        m_activePane = activeWorkspace()->pane(0);
+    }
+
+    syncPaneCountButtons();
 
     resize(1280, 800);
     setWindowTitle(tr("FolderDir"));
@@ -90,31 +91,50 @@ void MainWindow::setupUi()
     m_driveBar = new DriveBar(this);
     vl->addWidget(m_driveBar);
 
-    // Splitter tree
-    m_hSplitter  = new QSplitter(Qt::Vertical, central);
-    m_topSplitter = new QSplitter(Qt::Horizontal, m_hSplitter);
-    m_botSplitter = new QSplitter(Qt::Horizontal, m_hSplitter);
-    m_hSplitter->addWidget(m_topSplitter);
-    m_hSplitter->addWidget(m_botSplitter);
+    // ── Workspace tab widget ──────────────────────────────────────────────
+    m_workspaceTabs = new QTabWidget(central);
+    m_workspaceTabs->setTabsClosable(false);  // managed via context/button
+    m_workspaceTabs->setMovable(true);
+    m_workspaceTabs->setDocumentMode(true);
 
-    // Create all four panes
-    for (int i = 0; i < 4; ++i) {
-        m_panes[i] = new FolderPane(m_bookmarkManager, this);
-        m_panes[i]->setSettingsManager(m_settingsManager);  // GAP-001/002
-        connect(m_panes[i], &FolderPane::paneActivated,
-                this, &MainWindow::onActivePaneChanged);
-        connect(m_panes[i], &FolderPane::selectionChanged,
-                this, &MainWindow::onSelectionChanged);
-    }
+    // "+" corner button to add a new workspace tab
+    auto *addWsBtn = new QToolButton(m_workspaceTabs);
+    addWsBtn->setText(QStringLiteral("+"));
+    addWsBtn->setToolTip(tr("New Workspace Tab (Ctrl+Alt+T)"));
+    addWsBtn->setFixedSize(24, 24);
+    connect(addWsBtn, &QToolButton::clicked, this, &MainWindow::onAddWorkspace);
+    m_workspaceTabs->setCornerWidget(addWsBtn, Qt::TopRightCorner);
 
-    m_topSplitter->addWidget(m_panes[0]);
-    m_topSplitter->addWidget(m_panes[1]);
-    m_botSplitter->addWidget(m_panes[2]);
-    m_botSplitter->addWidget(m_panes[3]);
+    connect(m_workspaceTabs, &QTabWidget::currentChanged,
+            this, &MainWindow::onWorkspaceTabChanged);
+    connect(m_workspaceTabs->tabBar(), &QTabBar::tabCloseRequested,
+            this, &MainWindow::onCloseWorkspace);
+    connect(m_workspaceTabs->tabBar(), &QTabBar::tabBarDoubleClicked,
+            this, &MainWindow::onWorkspaceTabDoubleClicked);
+    m_workspaceTabs->tabBar()->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_workspaceTabs->tabBar(), &QWidget::customContextMenuRequested,
+            this, [this](const QPoint &pos) {
+        const int idx = m_workspaceTabs->tabBar()->tabAt(pos);
+        if (idx < 0) return;
+        QMenu menu;
+        menu.addAction(tr("Rename…"), this, [this, idx]() {
+            onWorkspaceTabDoubleClicked(idx);
+        });
+        if (m_workspaceTabs->count() > 1) {
+            menu.addAction(tr("Close"), this, [this, idx]() {
+                onCloseWorkspace(idx);
+            });
+        }
+        menu.exec(m_workspaceTabs->tabBar()->mapToGlobal(pos));
+    });
 
-    vl->addWidget(m_hSplitter, 1);
+    vl->addWidget(m_workspaceTabs, 1);
 
-    m_activePane = m_panes[0];
+    // Create the initial workspace
+    auto *ws = new WorkspaceWidget(m_bookmarkManager, m_settingsManager, this);
+    connectWorkspace(ws);
+    m_workspaceTabs->addTab(ws, tr("Workspace 1"));
+    m_activePane = ws->activePane();
 }
 
 void MainWindow::setupMenuBar()
@@ -211,6 +231,19 @@ void MainWindow::setupMenuBar()
     m_actFolderTree->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_T));
     connect(m_actFolderTree, &QAction::toggled,
             this, &MainWindow::onToggleFolderTree);
+
+    viewMenu->addSeparator();
+
+    // ── Workspace tab management ──────────────────────────────────────────
+    QMenu *wsMenu = viewMenu->addMenu(tr("&Workspaces"));
+    wsMenu->addAction(tr("&New Workspace"), this, &MainWindow::onAddWorkspace,
+                      QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_T));
+    wsMenu->addAction(tr("&Close Workspace"), this, [this]() {
+        onCloseWorkspace(m_workspaceTabs->currentIndex());
+    }, QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_W));
+    wsMenu->addAction(tr("&Rename Workspace…"), this, [this]() {
+        onWorkspaceTabDoubleClicked(m_workspaceTabs->currentIndex());
+    });
 
     // ── Tools ─────────────────────────────────────────────────────────────
     QMenu *toolsMenu = menuBar()->addMenu(tr("&Tools"));
@@ -485,85 +518,150 @@ void MainWindow::setupStatusBar()
     updateStatusBar();
 }
 
-void MainWindow::setupConnections()
+// ──────────────────────────────────────────────────────────────────────────────
+// Workspace helpers
+// ──────────────────────────────────────────────────────────────────────────────
+WorkspaceWidget *MainWindow::activeWorkspace() const
 {
-    // Keep preview panel in sync with the active pane's selection
-    for (auto *pane : m_panes) {
-        if (!pane) continue;
-        connect(pane, &FolderPane::selectionChanged, this, [this, pane]() {
-            if (pane != m_activePane) return;
-            if (!m_previewDock->isVisible()) return;
-            auto *browser = pane->currentBrowser();
-            if (!browser) return;
-            const QStringList sel = browser->selectedPaths();
-            if (sel.size() == 1)
-                m_previewPanel->previewFile(sel.first());
-            else
-                m_previewPanel->clear();
-        });
+    if (!m_workspaceTabs) return nullptr;
+    return qobject_cast<WorkspaceWidget *>(m_workspaceTabs->currentWidget());
+}
 
-        // Sync folder tree when active pane navigates, and refresh status bar item count
-        connect(pane, &FolderPane::pathChanged, this, [this, pane](const QString &path) {
-            if (pane != m_activePane) return;
-            if (m_treeDock->isVisible())
-                m_treePanel->setActivePath(path);
-            updateStatusBar();
-            // SP-9: propagate navigation to all other visible panes when sync is on
-            if (m_paneSyncEnabled) {
-                for (int i = 0; i < m_paneCount; ++i) {
-                    if (m_panes[i] && m_panes[i] != pane && m_panes[i]->isVisible())
-                        m_panes[i]->navigateTo(path);
-                }
-            }
-        });
-    }
+FolderPane *MainWindow::activePane() const
+{
+    auto *ws = activeWorkspace();
+    return ws ? ws->activePane() : m_activePane;
+}
+
+QString MainWindow::otherPanePath() const
+{
+    auto *ws = activeWorkspace();
+    if (ws) return ws->otherPanePath();
+    return QDir::homePath();
+}
+
+void MainWindow::connectWorkspace(WorkspaceWidget *ws)
+{
+    // Active pane changed inside this workspace
+    connect(ws, &WorkspaceWidget::paneActivated,
+            this, &MainWindow::onActivePaneChanged);
+
+    // Selection changed in any pane
+    connect(ws, &WorkspaceWidget::selectionChanged,
+            this, &MainWindow::onSelectionChanged);
+
+    // Active pane navigated — update tree, status bar, preview
+    connect(ws, &WorkspaceWidget::pathChanged, this, [this, ws](const QString &path) {
+        if (ws != activeWorkspace()) return;
+        if (m_treeDock && m_treeDock->isVisible())
+            m_treePanel->setActivePath(path);
+        updateStatusBar();
+    });
+
+    // Preview panel sync: forward selection from the active pane
+    connect(ws, &WorkspaceWidget::selectionChanged, this, [this, ws]() {
+        if (ws != activeWorkspace()) return;
+        if (!m_previewDock || !m_previewDock->isVisible()) return;
+        auto *pane = ws->activePane();
+        if (!pane) return;
+        auto *browser = pane->currentBrowser();
+        if (!browser) return;
+        const QStringList sel = browser->selectedPaths();
+        if (sel.size() == 1)
+            m_previewPanel->previewFile(sel.first());
+        else
+            m_previewPanel->clear();
+    });
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
 void MainWindow::applyLayout(int paneCount)
 {
-    m_paneCount = paneCount;
+    auto *ws = activeWorkspace();
+    if (!ws) return;
 
-    // Hide all first
-    for (auto *p : m_panes) {
-        if (p) p->hide();
-    }
-    m_botSplitter->hide();
-    m_topSplitter->hide();
+    ws->applyLayout(paneCount);
 
-    switch (paneCount) {
-    case 1:
-        m_panes[0]->show();
-        m_topSplitter->show();
-        break;
-    case 2:
-        m_panes[0]->show();
-        m_panes[1]->show();
-        m_topSplitter->show();
-        break;
-    case 3:
-        m_panes[0]->show();
-        m_panes[1]->show();
-        m_panes[2]->show();
-        m_topSplitter->show();
-        m_botSplitter->show();
-        break;
-    default: // 4
-        for (auto *p : m_panes) if (p) p->show();
-        m_topSplitter->show();
-        m_botSplitter->show();
-        break;
-    }
+    // Update m_activePane to the workspace's (possibly changed) active pane
+    m_activePane = ws->activePane();
 
-    // Sync the pane-count toolbar button checked state (UX-B08)
-    if (m_actPane1 && m_actPane2 && m_actPane3 && m_actPane4) {
-        m_actPane1->setChecked(paneCount == 1);
-        m_actPane2->setChecked(paneCount == 2);
-        m_actPane3->setChecked(paneCount == 3);
-        m_actPane4->setChecked(paneCount >= 4);
-    }
-
+    syncPaneCountButtons();
     m_settingsManager->setPaneCount(paneCount);
+}
+
+void MainWindow::syncPaneCountButtons()
+{
+    const int count = activeWorkspace() ? activeWorkspace()->paneCount() : 1;
+    if (m_actPane1 && m_actPane2 && m_actPane3 && m_actPane4) {
+        m_actPane1->setChecked(count == 1);
+        m_actPane2->setChecked(count == 2);
+        m_actPane3->setChecked(count == 3);
+        m_actPane4->setChecked(count >= 4);
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Workspace tab management
+// ──────────────────────────────────────────────────────────────────────────────
+void MainWindow::onAddWorkspace()
+{
+    const int tabNumber = m_workspaceTabs->count() + 1;
+    auto *ws = new WorkspaceWidget(m_bookmarkManager, m_settingsManager, this);
+    connectWorkspace(ws);
+    m_workspaceTabs->addTab(ws, tr("Workspace %1").arg(tabNumber));
+    m_workspaceTabs->setCurrentWidget(ws);
+
+    // Show close button on all tabs when more than one workspace exists
+    m_workspaceTabs->setTabsClosable(m_workspaceTabs->count() > 1);
+}
+
+void MainWindow::onCloseWorkspace(int index)
+{
+    if (m_workspaceTabs->count() <= 1) return; // always keep at least one
+    QWidget *w = m_workspaceTabs->widget(index);
+    m_workspaceTabs->removeTab(index);
+    w->deleteLater();
+
+    m_workspaceTabs->setTabsClosable(m_workspaceTabs->count() > 1);
+
+    // Update active pane after the switch
+    if (auto *ws = activeWorkspace())
+        m_activePane = ws->activePane();
+    syncPaneCountButtons();
+    updateStatusBar();
+}
+
+void MainWindow::onWorkspaceTabChanged(int /*index*/)
+{
+    auto *ws = activeWorkspace();
+    if (!ws) return;
+
+    m_activePane = ws->activePane();
+
+    // Sync lock button to new workspace's active pane
+    if (m_actLockPane)
+        m_actLockPane->setChecked(m_activePane && m_activePane->isLocked());
+    // Sync sync button
+    if (m_actPaneSync)
+        m_actPaneSync->setChecked(ws->isSyncEnabled());
+
+    syncPaneCountButtons();
+    updateStatusBar();
+
+    if (m_treeDock && m_treeDock->isVisible() && m_activePane)
+        m_treePanel->setActivePath(m_activePane->currentPath());
+}
+
+void MainWindow::onWorkspaceTabDoubleClicked(int index)
+{
+    if (index < 0) return;
+    const QString current = m_workspaceTabs->tabText(index);
+    bool ok = false;
+    const QString name = QInputDialog::getText(
+        this, tr("Rename Workspace"),
+        tr("Workspace name:"), QLineEdit::Normal, current, &ok);
+    if (ok && !name.trimmed().isEmpty())
+        m_workspaceTabs->setTabText(index, name.trimmed());
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -573,16 +671,18 @@ void MainWindow::saveSession()
     QSettings *s = m_settingsManager->raw();
 
     s->beginGroup(QStringLiteral("Session"));
-    s->setValue(QStringLiteral("paneCount"), m_paneCount);
     s->setValue(QStringLiteral("geometry"), saveGeometry());
-    s->setValue(QStringLiteral("state"), saveState());
+    s->setValue(QStringLiteral("state"),    saveState());
 
-    for (int i = 0; i < 4; ++i) {
-        if (!m_panes[i]) continue;
-        s->beginGroup(QStringLiteral("pane%1").arg(i));
-        s->setValue(QStringLiteral("tabs"), m_panes[i]->tabPaths());
-        s->setValue(QStringLiteral("currentTab"), m_panes[i]->currentTabIndex());
-        s->endGroup();
+    // Save each workspace
+    const int wsCount = m_workspaceTabs->count();
+    s->setValue(QStringLiteral("workspaceCount"), wsCount);
+    for (int w = 0; w < wsCount; ++w) {
+        auto *ws = qobject_cast<WorkspaceWidget *>(m_workspaceTabs->widget(w));
+        if (!ws) continue;
+        ws->saveToSettings(s, QStringLiteral("workspace%1").arg(w));
+        s->setValue(QStringLiteral("workspaceTab%1").arg(w),
+                    m_workspaceTabs->tabText(w));
     }
     s->endGroup();
 }
@@ -596,10 +696,7 @@ void MainWindow::restoreSession()
     if (!geo.isEmpty()) {
         restoreGeometry(geo);
 
-        // Guard against a saved geometry that is entirely off-screen (e.g. the
-        // window was on a monitor that is no longer connected).  If the restored
-        // frame rect does not intersect any currently-available screen geometry,
-        // move the window to the centre of the primary screen.
+        // Guard against off-screen geometry
         const QRect frame = frameGeometry();
         bool onScreen = false;
         for (const QScreen *scr : QGuiApplication::screens()) {
@@ -620,19 +717,53 @@ void MainWindow::restoreSession()
     const QByteArray state = s->value(QStringLiteral("state")).toByteArray();
     if (!state.isEmpty()) restoreState(state);
 
-    const int panes = s->value(QStringLiteral("paneCount"), 4).toInt();
-    applyLayout(panes);
+    const int wsCount = s->value(QStringLiteral("workspaceCount"), 1).toInt();
 
-    for (int i = 0; i < 4; ++i) {
-        if (!m_panes[i]) continue;
-        s->beginGroup(QStringLiteral("pane%1").arg(i));
-        const QStringList paths = s->value(QStringLiteral("tabs")).toStringList();
-        const int cur = s->value(QStringLiteral("currentTab"), 0).toInt();
-        if (!paths.isEmpty())
-            m_panes[i]->restoreTabs(paths, cur);
-        s->endGroup();
+    // Restore or create workspaces
+    for (int w = 0; w < wsCount; ++w) {
+        WorkspaceWidget *ws = nullptr;
+        if (w < m_workspaceTabs->count()) {
+            ws = qobject_cast<WorkspaceWidget *>(m_workspaceTabs->widget(w));
+        } else {
+            ws = new WorkspaceWidget(m_bookmarkManager, m_settingsManager, this);
+            connectWorkspace(ws);
+            m_workspaceTabs->addTab(ws, tr("Workspace %1").arg(w + 1));
+        }
+        if (!ws) continue;
+
+        // Restore tab label
+        const QString label = s->value(
+            QStringLiteral("workspaceTab%1").arg(w)).toString();
+        if (!label.isEmpty())
+            m_workspaceTabs->setTabText(w, label);
+
+        ws->restoreFromSettings(s, QStringLiteral("workspace%1").arg(w));
     }
+
+    // Backward-compat: if saved with old single-workspace format
+    if (wsCount <= 0 && m_workspaceTabs->count() > 0) {
+        auto *ws = qobject_cast<WorkspaceWidget *>(m_workspaceTabs->widget(0));
+        if (ws) {
+            const int panes = s->value(QStringLiteral("paneCount"), 1).toInt();
+            ws->applyLayout(panes);
+            for (int i = 0; i < 4; ++i) {
+                s->beginGroup(QStringLiteral("pane%1").arg(i));
+                const QStringList paths = s->value(QStringLiteral("tabs")).toStringList();
+                const int cur = s->value(QStringLiteral("currentTab"), 0).toInt();
+                if (!paths.isEmpty() && ws->pane(i))
+                    ws->pane(i)->restoreTabs(paths, cur);
+                s->endGroup();
+            }
+        }
+    }
+
     s->endGroup();
+
+    m_workspaceTabs->setTabsClosable(m_workspaceTabs->count() > 1);
+
+    if (auto *ws = activeWorkspace())
+        m_activePane = ws->activePane();
+    syncPaneCountButtons();
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -647,14 +778,18 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     const Qt::KeyboardModifiers mods = event->modifiers();
     const int key = event->key();
 
-    // Ctrl+1..4 — activate pane
+    // Ctrl+1..4 — activate pane in current workspace
     if (mods == Qt::ControlModifier) {
         if (key >= Qt::Key_1 && key <= Qt::Key_4) {
             int idx = key - Qt::Key_1;
-            if (idx < m_paneCount && m_panes[idx]) {
-                m_panes[idx]->setActive(true);
-                m_panes[idx]->setFocus();
-                onActivePaneChanged(m_panes[idx]);
+            auto *ws = activeWorkspace();
+            if (ws && idx < ws->paneCount()) {
+                auto *p = ws->pane(idx);
+                if (p) {
+                    ws->setActivePane(p);
+                    p->setFocus();
+                    onActivePaneChanged(p);
+                }
             }
             event->accept();
             return;
@@ -671,6 +806,19 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             event->accept();
             return;
         }
+    }
+
+    // Ctrl+Alt+T — new workspace tab
+    if (mods == (Qt::ControlModifier | Qt::AltModifier) && key == Qt::Key_T) {
+        onAddWorkspace();
+        event->accept();
+        return;
+    }
+    // Ctrl+Alt+W — close current workspace tab
+    if (mods == (Qt::ControlModifier | Qt::AltModifier) && key == Qt::Key_W) {
+        onCloseWorkspace(m_workspaceTabs->currentIndex());
+        event->accept();
+        return;
     }
 
     // F3 — open with viewer
@@ -721,38 +869,24 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-FolderPane *MainWindow::activePane() const
-{
-    return m_activePane ? m_activePane : m_panes[0];
-}
-
-QString MainWindow::otherPanePath() const
-{
-    const FolderPane *current = activePane();
-    for (int i = 0; i < m_paneCount; ++i) {
-        if (m_panes[i] && m_panes[i] != current && m_panes[i]->isVisible())
-            return m_panes[i]->currentPath();
-    }
-    return current ? current->currentPath() : QDir::homePath();
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
 // Slots
 // ──────────────────────────────────────────────────────────────────────────────
 void MainWindow::onActivePaneChanged(FolderPane *pane)
 {
     if (m_activePane == pane) return;
     m_activePane = pane;
-    for (auto *p : m_panes) {
-        if (p) p->setActive(p == pane);
-    }
+
+    // Propagate active state to workspace so inactive pane styling is cleared
+    if (auto *ws = activeWorkspace())
+        ws->setActivePane(pane);
+
     updateStatusBar();
 
     // Sync folder tree to the newly active pane's path
     if (m_treeDock && m_treeDock->isVisible() && pane)
         m_treePanel->setActivePath(pane->currentPath());
 
-    // SP-9: reflect the new active pane's lock state in the toolbar button
+    // SP-9: reflect lock state in toolbar button
     if (m_actLockPane)
         m_actLockPane->setChecked(pane && pane->isLocked());
 }
@@ -864,9 +998,15 @@ void MainWindow::onToggleHidden()
 {
     const bool show = m_actHidden->isChecked();
     m_settingsManager->setShowHiddenFiles(show);
-    for (auto *p : m_panes) {
-        if (p && p->currentBrowser())
-            p->currentBrowser()->setShowHidden(show);
+    // Apply to all panes in all workspaces (global setting)
+    for (int w = 0; w < m_workspaceTabs->count(); ++w) {
+        auto *ws = qobject_cast<WorkspaceWidget *>(m_workspaceTabs->widget(w));
+        if (!ws) continue;
+        for (int i = 0; i < 4; ++i) {
+            auto *p = ws->pane(i);
+            if (p && p->currentBrowser())
+                p->currentBrowser()->setShowHidden(show);
+        }
     }
 }
 
@@ -1045,13 +1185,16 @@ void MainWindow::onTreeNavigate(const QString &path)
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// SP-9: Panel sync / lock / clone
+// SP-9: Panel sync / lock / clone (per active workspace)
 // ──────────────────────────────────────────────────────────────────────────────
 void MainWindow::onTogglePaneSync()
 {
-    m_paneSyncEnabled = m_actPaneSync ? m_actPaneSync->isChecked() : !m_paneSyncEnabled;
+    auto *ws = activeWorkspace();
+    if (!ws) return;
+    const bool on = m_actPaneSync ? m_actPaneSync->isChecked() : !ws->isSyncEnabled();
+    ws->setSyncEnabled(on);
     if (m_actPaneSync)
-        m_actPaneSync->setChecked(m_paneSyncEnabled);
+        m_actPaneSync->setChecked(on);
 }
 
 void MainWindow::onLockPane()
@@ -1066,12 +1209,14 @@ void MainWindow::onLockPane()
 
 void MainWindow::onClonePane()
 {
+    auto *ws  = activeWorkspace();
     auto *src = activePane();
-    if (!src) return;
+    if (!ws || !src) return;
     const QString path = src->currentPath();
-    for (int i = 0; i < m_paneCount; ++i) {
-        if (m_panes[i] && m_panes[i] != src && m_panes[i]->isVisible())
-            m_panes[i]->navigateTo(path);
+    for (int i = 0; i < ws->paneCount(); ++i) {
+        auto *p = ws->pane(i);
+        if (p && p != src && p->isVisible())
+            p->navigateTo(path);
     }
 }
 
@@ -1097,13 +1242,17 @@ void MainWindow::onSaveLayoutPreset()
         if (btn != QMessageBox::Yes) return;
     }
 
+    auto *ws = activeWorkspace();
+    if (!ws) return;
+
     LayoutPreset preset;
     preset.name      = trimmed;
-    preset.paneCount = m_paneCount;
+    preset.paneCount = ws->paneCount();
     for (int i = 0; i < 4; ++i) {
-        if (m_panes[i]) {
-            preset.panes[i].tabs       = m_panes[i]->tabPaths();
-            preset.panes[i].currentTab = m_panes[i]->currentTabIndex();
+        auto *p = ws->pane(i);
+        if (p) {
+            preset.panes[i].tabs       = p->tabPaths();
+            preset.panes[i].currentTab = p->currentTabIndex();
         }
     }
 
@@ -1119,14 +1268,11 @@ void MainWindow::onLoadLayoutPreset(const QString &name)
     const LayoutPreset preset = m_layoutManager->find(name);
     if (!preset.isValid()) return;
 
-    applyLayout(preset.paneCount);
+    auto *ws = activeWorkspace();
+    if (!ws) return;
 
-    for (int i = 0; i < 4 && i < preset.paneCount; ++i) {
-        if (!m_panes[i]) continue;
-        const QStringList &tabs = preset.panes[i].tabs;
-        if (!tabs.isEmpty())
-            m_panes[i]->restoreTabs(tabs, preset.panes[i].currentTab);
-    }
+    ws->restoreFromPreset(preset.paneCount, preset.panes);
+    syncPaneCountButtons();
 }
 
 void MainWindow::onDeleteLayoutPreset(const QString &name)

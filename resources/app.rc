@@ -1,6 +1,12 @@
 // Windows resource file for FolderDir
 #include <windows.h>
 
+// Embed the application manifest so Windows can identify and trust the executable.
+// This suppresses unnecessary UAC elevation prompts and informs Defender SmartScreen
+// that the application declares its required privilege level explicitly.
+1 RT_MANIFEST "FolderDir.manifest"
+
+
 // Version information
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     1,0,0,0

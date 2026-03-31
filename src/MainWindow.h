@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QtWidgets/QMainWindow>
-#include <QtWidgets/QSplitter>
+#include <QtWidgets/QTabWidget>
 #include <QtGui/QActionGroup>
 #include <QtGui/QAction>
 #include <QtWidgets/QToolBar>
@@ -11,9 +11,9 @@
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QMenu>
 #include <QtCore/QSettings>
-#include <array>
 
 #include "FileSystemBrowser.h"   // for ViewMode enum
+#include "WorkspaceWidget.h"
 
 class FolderPane;
 class BookmarkManager;
@@ -27,9 +27,13 @@ class LayoutManager;
 /**
  * @brief MainWindow — top-level application window.
  *
- * Hosts up to four FolderPane instances arranged in a 2×2 grid of
- * QSplitters, plus a menu bar, toolbar, drive bar, status bar, and
- * optional side panels (bookmarks, preview, folder tree).
+ * Hosts a QTabWidget of WorkspaceWidget instances (workspace tabs).  Each
+ * workspace independently manages 1–4 FolderPane instances in a 2×2 splitter
+ * grid.  Every FolderPane carries its own BreadcrumbBar (address bar) and its
+ * own inner tab bar for multiple directories.
+ *
+ * The top toolbar and menu bar always operate on the *active* workspace's
+ * active pane.
  */
 class MainWindow : public QMainWindow
 {
@@ -75,18 +79,24 @@ private slots:
     void onTogglePreview();
     void onToggleBookmarkSidebar();
     void onToggleFolderTree();
-    void onSetViewMode(ViewMode mode); ///< Apply view mode to all visible panes
+    void onSetViewMode(ViewMode mode); ///< Apply view mode to the active pane
 
-    // SP-9: Panel sync / lock / clone
-    void onTogglePaneSync();    ///< Toggle directory-sync across all visible panes
-    void onLockPane();          ///< Lock / unlock the active pane (prevent navigation)
-    void onClonePane();         ///< Clone active pane's current path to other panes
+    // SP-9: Panel sync / lock / clone (per active workspace)
+    void onTogglePaneSync();    ///< Toggle directory-sync in the active workspace
+    void onLockPane();          ///< Lock / unlock the active pane
+    void onClonePane();         ///< Clone active pane's path to other panes
 
     // SP-10: Layout presets
-    void onSaveLayoutPreset();  ///< Prompt user for a name and save current layout
-    void onLoadLayoutPreset(const QString &name); ///< Restore a saved layout preset
-    void onDeleteLayoutPreset(const QString &name); ///< Remove a saved preset
-    void rebuildLayoutPresetsMenu(); ///< Rebuild the dynamic presets sub-menu
+    void onSaveLayoutPreset();
+    void onLoadLayoutPreset(const QString &name);
+    void onDeleteLayoutPreset(const QString &name);
+    void rebuildLayoutPresetsMenu();
+
+    // Workspace tabs
+    void onAddWorkspace();
+    void onCloseWorkspace(int index);
+    void onWorkspaceTabChanged(int index);
+    void onWorkspaceTabDoubleClicked(int index); ///< Rename workspace tab
 
     // Tools menu
     void onOpenSearch();
@@ -104,7 +114,7 @@ private slots:
     void onNavigateForward();
     void onNavigateUp();
 
-    // Status
+    // Status / active pane
     void onActivePaneChanged(FolderPane *pane);
     void onSelectionChanged();
     void updateStatusBar();
@@ -117,29 +127,28 @@ private:
     void setupMenuBar();
     void setupToolBar();
     void setupDriveBar();
-    void setupPanes(int count);
     void setupStatusBar();
     void setupDockWidgets();
-    void setupConnections();
     void saveSession();
     void restoreSession();
     void applyLayout(int paneCount);
+    void syncPaneCountButtons();
 
-    FolderPane *activePane() const;
-    /** Returns the path of the first other visible pane (for F5/F6 default dest). */
+    /** Connect a workspace's forwarded signals to MainWindow slots. */
+    void connectWorkspace(WorkspaceWidget *ws);
+
+    WorkspaceWidget *activeWorkspace() const;
+    FolderPane      *activePane()      const;
+    /** Path of the first other visible pane in the active workspace (F5/F6). */
     QString otherPanePath() const;
 
-    // Panes (max 4)
-    std::array<FolderPane *, 4> m_panes{};
-    int m_paneCount{4};
+    // ── Workspace tab widget ─────────────────────────────────────────────────
+    QTabWidget *m_workspaceTabs{nullptr};
+
+    // ── Active pane (convenience pointer — always == activeWorkspace()->activePane()) ──
     FolderPane *m_activePane{nullptr};
 
-    // Layout splitters
-    QSplitter *m_hSplitter{nullptr};   // top / bottom
-    QSplitter *m_topSplitter{nullptr}; // top-left / top-right
-    QSplitter *m_botSplitter{nullptr}; // bot-left / bot-right
-
-    // Dock widgets
+    // ── Dock widgets ─────────────────────────────────────────────────────────
     QDockWidget *m_bookmarkDock{nullptr};
     QDockWidget *m_previewDock{nullptr};
     QDockWidget *m_treeDock{nullptr};
@@ -147,51 +156,48 @@ private:
     PreviewPanel    *m_previewPanel{nullptr};
     FolderTreePanel *m_treePanel{nullptr};
 
-    // Toolbar
+    // ── Toolbar ──────────────────────────────────────────────────────────────
     QToolBar *m_toolBar{nullptr};
     DriveBar *m_driveBar{nullptr};
 
-    // Status bar labels
+    // ── Status bar labels ────────────────────────────────────────────────────
     QLabel *m_statusSelection{nullptr};
     QLabel *m_statusItems{nullptr};
     QLabel *m_statusDisk{nullptr};
 
-    // Actions
+    // ── Actions ──────────────────────────────────────────────────────────────
     QAction *m_actHidden{nullptr};
     QAction *m_actPreview{nullptr};
     QAction *m_actBookmarkSidebar{nullptr};
     QAction *m_actFolderTree{nullptr};
 
     // SP-9: pane panel actions
-    QAction *m_actPaneSync{nullptr};   ///< Toggle sync-navigation
-    QAction *m_actLockPane{nullptr};   ///< Lock/unlock active pane
-    QAction *m_actClonePane{nullptr};  ///< Clone active pane path to others
+    QAction *m_actPaneSync{nullptr};
+    QAction *m_actLockPane{nullptr};
+    QAction *m_actClonePane{nullptr};
 
-    // SP-9: sync state
-    bool m_paneSyncEnabled{false};
-
-    // View mode actions (exclusive group in View > View Mode sub-menu)
+    // View mode actions
     QAction *m_actViewDetails{nullptr};
     QAction *m_actViewList{nullptr};
     QAction *m_actViewIcons{nullptr};
     QAction *m_actViewThumbnails{nullptr};
     ViewMode m_currentViewMode{ViewMode::Details};
 
-    // Pane-count toolbar actions (exclusive group; checked = active count)
+    // Pane-count toolbar actions
     QAction *m_actPane1{nullptr};
     QAction *m_actPane2{nullptr};
     QAction *m_actPane3{nullptr};
     QAction *m_actPane4{nullptr};
 
-    // Bookmark list widget (promoted to member for drag-reorder wiring)
+    // ── Bookmark list ────────────────────────────────────────────────────────
     QListWidget *m_bookmarkList{nullptr};
 
-    // Managers
+    // ── Managers ─────────────────────────────────────────────────────────────
     BookmarkManager *m_bookmarkManager{nullptr};
     SettingsManager *m_settingsManager{nullptr};
-    LayoutManager   *m_layoutManager{nullptr};   ///< SP-10: layout presets
+    LayoutManager   *m_layoutManager{nullptr};
 
-    // SP-10: layout presets menu (rebuilt whenever presets change)
+    // SP-10: layout presets menu
     QMenu *m_layoutPresetsMenu{nullptr};
 };
 
