@@ -1059,3 +1059,50 @@ src/
 - [x] BUG-002 수정: `SelectedClicked` EditTrigger 추가
   → 이미 선택된 항목 재클릭 시 인라인 이름 변경 시작 (Windows 탐색기 동일 동작)
 - [x] 두 변경 모두 `FileSystemBrowser::setupUi()` 내 4줄 추가로 최소 범위 수정
+
+---
+
+## 0.11 Sprint 11 — 워크스페이스 탭 & Windows SmartScreen 대응 (Dev C) ✅ 완료
+
+> 작성: 2026-03-31
+
+### 변경 내용 요약
+
+#### 1. Windows SmartScreen 완화 — 앱 매니페스트 추가
+- `resources/FolderDir.manifest` 신규 작성
+  - `requestedExecutionLevel level="asInvoker"` — 불필요한 UAC 상승 방지
+  - `compatibility` 블록 — Windows 7/8/8.1/10/11 명시 지원 선언
+  - `dpiAwareness` PerMonitorV2 — 고해상도 모니터 대응
+  - `longPathAware` true — 긴 경로명 지원
+- `resources/app.rc` 에 `1 RT_MANIFEST "FolderDir.manifest"` 추가 → 실행 파일 내 매니페스트 임베딩
+
+#### 2. 워크스페이스 탭 (Top-level Workspace Tabs)
+- **`WorkspaceWidget`** 신규 클래스 (`src/WorkspaceWidget.h/cpp`)
+  - 기존 2×2 QSplitter 레이아웃 + FolderPane 4개를 캡슐화
+  - 독립적인 패널 수 설정 (1/2/3/4)
+  - 워크스페이스별 패널 동기화 (SP-9 per-workspace)
+  - 세션 저장/복원 (`saveToSettings`, `restoreFromSettings`)
+  - 레이아웃 프리셋 복원 (`restoreFromPreset`)
+- **`MainWindow`** 수정
+  - 기존 고정 4-패널 레이아웃 → `QTabWidget` (워크스페이스 탭) 으로 교체
+  - 각 탭이 독립적인 `WorkspaceWidget` 을 가짐
+  - 상단 우측 "+" 버튼으로 새 워크스페이스 탭 추가
+  - 탭 더블클릭 / 우클릭 메뉴로 탭 이름 변경 및 닫기
+  - `Ctrl+Alt+T` — 새 워크스페이스 탭
+  - `Ctrl+Alt+W` — 현재 워크스페이스 닫기
+  - View > Workspaces 메뉴에 워크스페이스 관리 항목 추가
+  - 세션 저장/복원: 워크스페이스별 데이터 + 탭 레이블 저장
+  - 구형 단일 워크스페이스 세션과의 하위 호환 복원 지원
+
+#### 3. 각 패널의 주소창 (기존 기능 확인)
+- `FolderPane` 은 이미 `BreadcrumbBar` (클릭형 경로 세그먼트 + 편집 모드) 를 내장
+- 모든 워크스페이스의 모든 패널이 개별 주소창을 가짐
+
+#### 체크리스트
+- [x] `resources/FolderDir.manifest` 신규 생성
+- [x] `resources/app.rc` 매니페스트 임베딩
+- [x] `src/WorkspaceWidget.h/cpp` 신규 생성
+- [x] `src/MainWindow.h` — 워크스페이스 탭 멤버/메서드로 교체
+- [x] `src/MainWindow.cpp` — 워크스페이스 탭 전체 구현
+- [x] `CMakeLists.txt` — WorkspaceWidget 소스/헤더 추가
+- [x] 빌드 성공 확인

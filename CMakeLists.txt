@@ -37,6 +37,7 @@ endif()
 set(SOURCES
     src/main.cpp
     src/MainWindow.cpp
+    src/WorkspaceWidget.cpp
     src/FolderPane.cpp
     src/FileSystemBrowser.cpp
     src/FileSystemModel.cpp
@@ -59,6 +60,7 @@ set(SOURCES
 
 set(HEADERS
     src/MainWindow.h
+    src/WorkspaceWidget.h
     src/FolderPane.h
     src/FileSystemBrowser.h
     src/FileSystemModel.h
